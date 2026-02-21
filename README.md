@@ -1,1 +1,1 @@
-# RIdeBuddy
+# RideBuddy
