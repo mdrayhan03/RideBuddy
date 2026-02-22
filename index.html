@@ -1,0 +1,1586 @@
+﻿<!doctype html>
+<html lang="en" class="h-full">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IUB Ride Share</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  
+  
+  <script src="https://cdn.tailwindcss.com/3.4.17" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="app-container" id="app"><!-- Toast Container -->
+   <div class="toast-container" id="toastContainer"></div><!-- Auth Pages -->
+   <div id="authPages"><!-- Welcome Page -->
+    <div class="page active" id="welcomePage">
+     <div class="auth-container p-4">
+      <div class="text-center text-white mb-5"><i class="bi bi-car-front-fill" style="font-size: 4rem;"></i>
+       <h1 class="mt-3 fw-bold">IUB Ride Share</h1>
+       <p class="opacity-75">Safe &amp; Reliable Campus Transportation</p>
+      </div>
+      <div class="auth-card mx-auto" style="max-width: 400px;">
+       <h4 class="text-center mb-4 fw-bold">Welcome!</h4>
+       <p class="text-center text-muted mb-4">Choose how you want to continue</p>
+       <div class="d-grid gap-3"><button class="btn btn-primary-custom btn-lg" onclick="showPage('loginPage')"> <i class="bi bi-box-arrow-in-right me-2"></i>Login </button> <button class="btn btn-secondary-custom btn-lg" onclick="showPage('createAccountPage')"> <i class="bi bi-person-plus me-2"></i>Create Account </button>
+       </div>
+      </div>
+     </div>
+    </div><!-- Login Page -->
+    <div class="page" id="loginPage">
+     <div class="auth-container p-4">
+      <div class="auth-card mx-auto" style="max-width: 400px;"><button class="btn btn-link p-0 mb-3" onclick="showPage('welcomePage')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+       <h3 class="fw-bold mb-4">Login</h3>
+       <div class="d-flex gap-3 mb-4">
+        <div class="user-type-btn flex-fill text-center active" onclick="selectLoginType('student', this)"><i class="bi bi-mortarboard fs-2 d-block mb-2" style="color: var(--primary-color);"></i> <span class="fw-500">Student</span>
+        </div>
+        <div class="user-type-btn flex-fill text-center" onclick="selectLoginType('rider', this)"><i class="bi bi-bicycle fs-2 d-block mb-2" style="color: var(--secondary-color);"></i> <span class="fw-500">Rider</span>
+        </div>
+       </div>
+       <form id="loginForm" onsubmit="handleLogin(event)">
+        <div class="mb-3" id="studentLoginField"><label class="form-label fw-500">IUB ID</label> <input type="text" class="form-control input-custom" id="loginIubId" placeholder="Enter your IUB ID">
+        </div>
+        <div class="mb-3 d-none" id="riderLoginField"><label class="form-label fw-500">License Number</label> <input type="text" class="form-control input-custom" id="loginLicenceNo" placeholder="Enter your license number">
+        </div><button type="submit" class="btn btn-primary-custom w-100 btn-lg mt-3"> <i class="bi bi-box-arrow-in-right me-2"></i>Login </button>
+       </form>
+      </div>
+     </div>
+    </div><!-- Create Account Page -->
+    <div class="page" id="createAccountPage">
+     <div class="auth-container p-4" style="min-height: auto;">
+      <div class="auth-card mx-auto my-4" style="max-width: 500px;"><button class="btn btn-link p-0 mb-3" onclick="showPage('welcomePage')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+       <h3 class="fw-bold mb-4">Create Account</h3>
+       <div class="d-flex gap-3 mb-4">
+        <div class="user-type-btn flex-fill text-center active" onclick="selectAccountType('student', this)"><i class="bi bi-mortarboard fs-2 d-block mb-2" style="color: var(--primary-color);"></i> <span class="fw-500">Student</span>
+        </div>
+        <div class="user-type-btn flex-fill text-center" onclick="selectAccountType('rider', this)"><i class="bi bi-bicycle fs-2 d-block mb-2" style="color: var(--secondary-color);"></i> <span class="fw-500">Rider</span>
+        </div>
+       </div>
+       <form id="createAccountForm" onsubmit="handleCreateAccount(event)"><!-- Common Fields -->
+        <div class="text-center mb-4">
+         <div class="image-upload mx-auto" onclick="document.getElementById('profileImage').click()"><i class="bi bi-camera fs-2 text-muted" id="imageIcon"></i>
+         </div><input type="file" id="profileImage" accept="image/*" class="d-none" onchange="handleImageUpload(this)">
+         <p class="text-muted small mt-2">Upload Photo</p>
+        </div><!-- Student Specific Fields -->
+        <div id="studentFields">
+         <div class="form-section">
+          <div class="form-section-title"><i class="bi bi-person-badge me-2"></i>Student Information
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">IUB ID <span class="text-danger">*</span></label> <input type="text" class="form-control input-custom" id="regIubId" placeholder="e.g., 2012345">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Full Name <span class="text-danger">*</span></label> <input type="text" class="form-control input-custom" id="regStudentName" placeholder="Enter your full name">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Gender <span class="text-danger">*</span></label> <select class="form-select input-custom" id="regStudentGender"> <option value="">Select gender</option> <option value="male">Male</option> <option value="female">Female</option> <option value="other">Other</option> </select>
+          </div>
+         </div>
+         <div class="form-section">
+          <div class="form-section-title"><i class="bi bi-telephone me-2"></i>Contact Information
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Phone Number <span class="text-danger">*</span></label> <input type="tel" class="form-control input-custom" id="regStudentPhone" placeholder="e.g., 01XXXXXXXXX">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Personal Email <span class="text-danger">*</span></label> <input type="email" class="form-control input-custom" id="regStudentEmail" placeholder="your@email.com">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Emergency Contact <span class="text-danger">*</span></label> <input type="tel" class="form-control input-custom" id="regStudentEmergency" placeholder="Emergency contact number">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Home Address <span class="text-danger">*</span></label> <textarea class="form-control input-custom" id="regStudentAddress" rows="2" placeholder="Enter your home address"></textarea>
+          </div>
+         </div>
+        </div><!-- Rider Specific Fields -->
+        <div id="riderFields" class="d-none">
+         <div class="form-section">
+          <div class="form-section-title"><i class="bi bi-person-badge me-2"></i>Rider Information
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">License Number <span class="text-danger">*</span></label> <input type="text" class="form-control input-custom" id="regLicenceNo" placeholder="Enter license number">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Full Name <span class="text-danger">*</span></label> <input type="text" class="form-control input-custom" id="regRiderName" placeholder="Enter your full name">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Gender <span class="text-danger">*</span></label> <select class="form-select input-custom" id="regRiderGender"> <option value="">Select gender</option> <option value="male">Male</option> <option value="female">Female</option> <option value="other">Other</option> </select>
+          </div>
+         </div>
+         <div class="form-section">
+          <div class="form-section-title"><i class="bi bi-telephone me-2"></i>Contact Information
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Phone Number <span class="text-danger">*</span></label> <input type="tel" class="form-control input-custom" id="regRiderPhone" placeholder="e.g., 01XXXXXXXXX">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Personal Email <span class="text-danger">*</span></label> <input type="email" class="form-control input-custom" id="regRiderEmail" placeholder="your@email.com">
+          </div>
+          <div class="mb-3"><label class="form-label fw-500">Emergency Contact <span class="text-danger">*</span></label> <input type="tel" class="form-control input-custom" id="regRiderEmergency" placeholder="Emergency contact number">
+          </div>
+         </div>
+        </div><button type="submit" class="btn btn-primary-custom w-100 btn-lg mt-3" id="createAccountBtn"> <i class="bi bi-person-plus me-2"></i>Create Account </button>
+       </form>
+      </div>
+     </div>
+    </div>
+   </div><!-- Main App (After Login) -->
+   <div id="mainApp" class="d-none">
+    <div class="main-content" id="mainContent"><!-- ============ STUDENT PAGES ============ --> <!-- Student Home Page -->
+     <div class="page" id="studentHomePage">
+      <div class="p-4 fade-in">
+       <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+         <h5 class="mb-1 fw-bold">Hello, <span id="studentNameDisplay">Student</span>! 👋</h5>
+         <p class="text-muted small mb-0">Where would you like to go?</p>
+        </div>
+        <div class="avatar avatar-sm" id="studentAvatarSmall">
+         S
+        </div>
+       </div><!-- Location Input -->
+       <div class="card-custom p-3 mb-4">
+        <div class="d-flex gap-2">
+         <div class="flex-grow-1">
+          <div class="input-group"><span class="input-group-text bg-white border-end-0 rounded-start-3"> <i class="bi bi-geo-alt text-danger"></i> </span> <input type="text" class="form-control border-start-0 rounded-end-3" id="pickupLocation" placeholder="Enter pickup location">
+          </div>
+         </div><button class="filter-btn" onclick="showFilterModal()"> <i class="bi bi-sliders"></i> </button>
+        </div>
+        <div class="mt-3">
+         <div class="input-group"><span class="input-group-text bg-white border-end-0 rounded-start-3"> <i class="bi bi-geo-alt-fill text-success"></i> </span> <input type="text" class="form-control border-start-0 rounded-end-3" id="dropLocation" placeholder="Enter destination">
+         </div>
+        </div>
+       </div><!-- Recent History -->
+       <div class="mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Recent Trips</h6>
+        <div id="recentTripsContainer">
+         <div class="history-item d-flex align-items-center">
+          <div class="me-3"><i class="bi bi-geo-alt fs-4 text-primary"></i>
+          </div>
+          <div class="flex-grow-1">
+           <p class="mb-0 fw-500">IUB Campus</p><small class="text-muted">Bashundhara R/A</small>
+          </div><i class="bi bi-chevron-right text-muted"></i>
+         </div>
+         <div class="history-item d-flex align-items-center">
+          <div class="me-3"><i class="bi bi-geo-alt fs-4 text-primary"></i>
+          </div>
+          <div class="flex-grow-1">
+           <p class="mb-0 fw-500">Jamuna Future Park</p><small class="text-muted">Kuril</small>
+          </div><i class="bi bi-chevron-right text-muted"></i>
+         </div>
+        </div>
+       </div><!-- Ride Options -->
+       <h6 class="fw-bold mb-3"><i class="bi bi-car-front me-2"></i>Choose Ride Type</h6>
+       <div class="row g-3">
+        <div class="col-4">
+         <div class="ride-option text-center" onclick="selectRideType('car', this)">
+          <div class="ride-icon mx-auto mb-2"><i class="bi bi-car-front"></i>
+          </div>
+          <p class="mb-1 fw-500">Car</p><small class="text-muted">৳150+</small>
+         </div>
+        </div>
+        <div class="col-4">
+         <div class="ride-option text-center" onclick="selectRideType('bike', this)">
+          <div class="ride-icon mx-auto mb-2" style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);"><i class="bi bi-bicycle"></i>
+          </div>
+          <p class="mb-1 fw-500">Bike</p><small class="text-muted">৳50+</small>
+         </div>
+        </div>
+        <div class="col-4">
+         <div class="ride-option text-center" onclick="selectRideType('cng', this)">
+          <div class="ride-icon mx-auto mb-2" style="background: linear-gradient(135deg, #f9ab00 0%, #fbbc05 100%);"><i class="bi bi-truck"></i>
+          </div>
+          <p class="mb-1 fw-500">CNG</p><small class="text-muted">৳80+</small>
+         </div>
+        </div>
+       </div><button class="btn btn-primary-custom w-100 mt-4" onclick="goToRidePage()"> <i class="bi bi-search me-2"></i>Find Rides </button>
+      </div>
+     </div><!-- Student Ride Search Page -->
+     <div class="page" id="studentRidePage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="showStudentPage('home')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Find a Ride</h5>
+       </div><!-- Location Input -->
+       <div class="card-custom p-3 mb-4">
+        <div class="d-flex gap-2">
+         <div class="flex-grow-1">
+          <div class="input-group mb-2"><span class="input-group-text bg-white border-end-0"> <i class="bi bi-geo-alt text-danger"></i> </span> <input type="text" class="form-control border-start-0" placeholder="Pickup location">
+          </div>
+          <div class="input-group"><span class="input-group-text bg-white border-end-0"> <i class="bi bi-geo-alt-fill text-success"></i> </span> <input type="text" class="form-control border-start-0" placeholder="Destination">
+          </div>
+         </div><button class="filter-btn align-self-center"> <i class="bi bi-sliders"></i> </button>
+        </div>
+       </div><!-- Map -->
+       <div class="map-container mb-4" style="height: 250px;">
+        <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+        </div>
+       </div><!-- Ride Type Buttons -->
+       <div class="d-grid gap-3"><button class="btn btn-primary-custom btn-lg" onclick="searchIndividualRide()"> <i class="bi bi-person me-2"></i>Search Individual Ride </button> <button class="btn btn-secondary-custom btn-lg" onclick="searchShareRide()"> <i class="bi bi-people me-2"></i>Search Share Ride </button>
+       </div>
+      </div>
+     </div><!-- Student Confirm Ride Page -->
+     <div class="page" id="studentConfirmRidePage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="showStudentPage('ride')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Confirm Your Ride</h5>
+       </div><!-- Map -->
+       <div class="map-container mb-4" style="height: 200px;">
+        <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+        </div>
+       </div><!-- Rider Info -->
+       <div class="card-custom p-4 mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-person-check me-2"></i>Rider Found!</h6>
+        <div class="d-flex align-items-center">
+         <div class="avatar avatar-sm me-3" style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+          R
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Rahim Ahmed</p>
+          <div class="rating-stars"><i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-half"></i> <span class="ms-1 text-muted">4.5</span>
+          </div>
+         </div>
+         <div class="text-end">
+          <p class="mb-0 fw-bold text-primary">৳120</p><small class="text-muted">Honda CBR</small>
+         </div>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-around text-center">
+         <div><i class="bi bi-clock fs-4 text-primary"></i>
+          <p class="mb-0 small">5 min</p>
+         </div>
+         <div><i class="bi bi-signpost-split fs-4 text-success"></i>
+          <p class="mb-0 small">3.2 km</p>
+         </div>
+         <div><i class="bi bi-telephone fs-4 text-warning"></i>
+          <p class="mb-0 small">Call</p>
+         </div>
+        </div>
+       </div>
+       <div class="d-grid gap-3"><button class="btn btn-success-custom btn-lg" onclick="confirmRide()"> <i class="bi bi-check-circle me-2"></i>Confirm Ride </button> <button class="btn btn-secondary-custom" onclick="lookForMoreRiders()"> <i class="bi bi-search me-2"></i>Look for More Options </button>
+       </div>
+      </div>
+     </div><!-- Student Share Ride Page -->
+     <div class="page" id="studentShareRidePage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="showStudentPage('ride')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Share Ride</h5>
+       </div><!-- Map -->
+       <div class="map-container mb-4" style="height: 180px;">
+        <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+        </div>
+       </div>
+       <h6 class="fw-bold mb-3"><i class="bi bi-people me-2"></i>Available Share Rides</h6>
+       <div id="availableShareRides">
+        <div class="available-ride-card" onclick="selectShareRide(1)">
+         <div class="d-flex align-items-center mb-2">
+          <div class="avatar avatar-sm me-3">
+           K
+          </div>
+          <div class="flex-grow-1">
+           <p class="mb-0 fw-500">Karim's Ride</p><small class="text-muted">Toyota Corolla • 2 seats left</small>
+          </div><span class="badge bg-success">৳60/person</span>
+         </div>
+         <div class="share-ride-info small">
+          <div class="d-flex justify-content-between"><span><i class="bi bi-geo-alt me-1"></i>IUB Campus</span> <span><i class="bi bi-arrow-right"></i></span> <span><i class="bi bi-geo-alt-fill me-1"></i>Bashundhara</span>
+          </div>
+          <div class="mt-1 text-muted"><i class="bi bi-clock me-1"></i>Leaving in 10 mins
+          </div>
+         </div>
+        </div>
+        <div class="available-ride-card" onclick="selectShareRide(2)">
+         <div class="d-flex align-items-center mb-2">
+          <div class="avatar avatar-sm me-3" style="background: linear-gradient(135deg, #f9ab00 0%, #fbbc05 100%);">
+           S
+          </div>
+          <div class="flex-grow-1">
+           <p class="mb-0 fw-500">Sadia's Ride</p><small class="text-muted">Honda City • 3 seats left</small>
+          </div><span class="badge bg-success">৳50/person</span>
+         </div>
+         <div class="share-ride-info small">
+          <div class="d-flex justify-content-between"><span><i class="bi bi-geo-alt me-1"></i>IUB Gate</span> <span><i class="bi bi-arrow-right"></i></span> <span><i class="bi bi-geo-alt-fill me-1"></i>Gulshan</span>
+          </div>
+          <div class="mt-1 text-muted"><i class="bi bi-clock me-1"></i>Leaving in 15 mins
+          </div>
+         </div>
+        </div>
+       </div><button class="btn btn-primary-custom w-100 mt-4" onclick="createNewShareRide()"> <i class="bi bi-plus-circle me-2"></i>Create New Share Ride </button>
+      </div>
+     </div><!-- Student Available Ride Page -->
+     <div class="page" id="studentAvailableRidePage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="showStudentPage('shareRide')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Ride Details</h5>
+       </div><!-- Map -->
+       <div class="map-container mb-4" style="height: 180px;">
+        <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+        </div>
+       </div><!-- Rider Info -->
+       <div class="card-custom p-4 mb-3">
+        <h6 class="fw-bold mb-3"><i class="bi bi-person-badge me-2"></i>Rider Information</h6>
+        <div class="d-flex align-items-center">
+         <div class="avatar avatar-sm me-3">
+          K
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Karim Rahman</p>
+          <div class="rating-stars small"><i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star"></i> <span class="ms-1">4.0</span>
+          </div>
+         </div><button class="btn btn-sm btn-outline-primary rounded-circle"> <i class="bi bi-telephone"></i> </button>
+        </div>
+       </div><!-- Other Passengers -->
+       <div class="card-custom p-4 mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-people me-2"></i>Other Passengers (2)</h6>
+        <div class="d-flex gap-2 flex-wrap">
+         <div class="d-flex align-items-center bg-light rounded-pill px-3 py-2">
+          <div class="avatar avatar-sm me-2" style="width: 30px; height: 30px; font-size: 0.8rem;">
+           A
+          </div><span class="small">Anika</span>
+         </div>
+         <div class="d-flex align-items-center bg-light rounded-pill px-3 py-2">
+          <div class="avatar avatar-sm me-2" style="width: 30px; height: 30px; font-size: 0.8rem; background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+           T
+          </div><span class="small">Tanvir</span>
+         </div>
+        </div>
+       </div>
+       <div class="d-grid gap-3"><button class="btn btn-success-custom btn-lg" onclick="confirmShareRide()"> <i class="bi bi-check-circle me-2"></i>Confirm Join </button> <button class="btn btn-secondary-custom" onclick="showStudentPage('shareRide')"> <i class="bi bi-search me-2"></i>Look for More Options </button>
+       </div>
+      </div>
+     </div><!-- Student Activity Page -->
+     <div class="page" id="studentActivityPage">
+      <div class="p-4 fade-in">
+       <h4 class="fw-bold mb-4"><i class="bi bi-activity me-2"></i>Activity</h4>
+       <div id="studentActivityContent"><!-- Searching State -->
+        <div id="searchingState" class="d-none">
+         <div class="map-container mb-4" style="height: 250px;">
+          <div class="text-center">
+           <div class="loading-spinner mb-3"></div>
+           <p class="fw-500">Finding your ride...</p>
+          </div>
+         </div>
+         <div class="card-custom p-4 text-center">
+          <p class="text-muted mb-0">Please wait while we connect you with nearby riders</p>
+         </div>
+        </div><!-- Active Ride State -->
+        <div id="activeRideState" class="d-none">
+         <div class="map-container mb-4" style="height: 200px;">
+          <div class="map-marker pulse-animation"><i class="bi bi-geo-alt-fill"></i>
+          </div>
+         </div>
+         <div class="card-custom p-4 mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-3"><span class="status-badge status-pending"> <i class="bi bi-car-front me-1"></i>Ride in Progress </span> <span class="fw-bold text-primary">৳120</span>
+          </div>
+          <h6 class="fw-bold mb-3">Rider</h6>
+          <div class="d-flex align-items-center mb-3">
+           <div class="avatar avatar-sm me-3" style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+            R
+           </div>
+           <div class="flex-grow-1">
+            <p class="mb-0 fw-500">Rahim Ahmed</p><small class="text-muted">Honda CBR • DHA-1234</small>
+           </div><button class="btn btn-sm btn-outline-primary rounded-circle"> <i class="bi bi-telephone"></i> </button>
+          </div>
+          <h6 class="fw-bold mb-3">Passengers</h6>
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-3">
+            Y
+           </div>
+           <div>
+            <p class="mb-0 fw-500">You</p><small class="text-muted">IUB Campus → Bashundhara</small>
+           </div>
+          </div>
+         </div><button class="emergency-btn mx-auto d-flex" onclick="emergencyCall()"> <i class="bi bi-telephone-fill"></i> </button>
+         <p class="text-center text-muted small mt-2">Emergency Call</p>
+        </div><!-- No Activity State -->
+        <div id="noActivityState">
+         <div class="text-center py-5"><i class="bi bi-inbox fs-1 text-muted"></i>
+          <h5 class="mt-3">No Active Rides</h5>
+          <p class="text-muted">Book a ride from the home page to get started</p><button class="btn btn-primary-custom" onclick="showStudentPage('home')"> <i class="bi bi-house me-2"></i>Go to Home </button>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div><!-- Student History Page -->
+     <div class="page" id="studentHistoryPage">
+      <div class="p-4 fade-in">
+       <h4 class="fw-bold mb-4"><i class="bi bi-clock-history me-2"></i>Ride History</h4>
+       <div id="studentHistoryList">
+        <div class="history-item" onclick="showIndividualHistory('student', 1)">
+         <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+           <p class="mb-0 fw-500">IUB Campus → Bashundhara R/A</p><small class="text-muted">Dec 15, 2024 • 2:30 PM</small>
+          </div><span class="status-badge status-completed">Completed</span>
+         </div>
+         <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-2" style="width: 30px; height: 30px; font-size: 0.7rem;">
+            R
+           </div><small>Rahim Ahmed</small>
+          </div><span class="fw-bold">৳120</span>
+         </div>
+        </div>
+        <div class="history-item" onclick="showIndividualHistory('student', 2)">
+         <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+           <p class="mb-0 fw-500">Gulshan → IUB Campus</p><small class="text-muted">Dec 14, 2024 • 9:00 AM</small>
+          </div><span class="status-badge status-completed">Completed</span>
+         </div>
+         <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-2" style="width: 30px; height: 30px; font-size: 0.7rem; background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+            K
+           </div><small>Karim Rahman</small>
+          </div><span class="fw-bold">৳150</span>
+         </div>
+        </div>
+        <div class="history-item" onclick="showIndividualHistory('student', 3)">
+         <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+           <p class="mb-0 fw-500">Banani → IUB Campus</p><small class="text-muted">Dec 13, 2024 • 8:30 AM</small>
+          </div><span class="status-badge status-cancelled">Cancelled</span>
+         </div>
+         <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-2" style="width: 30px; height: 30px; font-size: 0.7rem;">
+            S
+           </div><small>Sadia Akter</small>
+          </div><span class="fw-bold text-muted">৳0</span>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div><!-- Student Individual History Page -->
+     <div class="page" id="studentIndividualHistoryPage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="switchNavTab('history')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Trip Details</h5>
+       </div><!-- Map -->
+       <div class="map-container mb-4" style="height: 180px;">
+        <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+        </div>
+       </div><!-- Trip Info -->
+       <div class="card-custom p-4 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3"><span class="status-badge status-completed">Completed</span> <span class="fw-bold fs-5 text-primary">৳120</span>
+        </div>
+        <div class="mb-3">
+         <div class="d-flex align-items-start mb-2"><i class="bi bi-geo-alt text-danger me-2 mt-1"></i>
+          <div><small class="text-muted">Pickup</small>
+           <p class="mb-0 fw-500">IUB Campus, Bashundhara</p>
+          </div>
+         </div>
+         <div class="d-flex align-items-start"><i class="bi bi-geo-alt-fill text-success me-2 mt-1"></i>
+          <div><small class="text-muted">Drop-off</small>
+           <p class="mb-0 fw-500">Bashundhara R/A, Block A</p>
+          </div>
+         </div>
+        </div>
+        <hr>
+        <div class="row text-center">
+         <div class="col-4"><i class="bi bi-clock fs-4 text-primary"></i>
+          <p class="mb-0 small fw-500">25 min</p><small class="text-muted">Duration</small>
+         </div>
+         <div class="col-4"><i class="bi bi-signpost-split fs-4 text-success"></i>
+          <p class="mb-0 small fw-500">5.2 km</p><small class="text-muted">Distance</small>
+         </div>
+         <div class="col-4"><i class="bi bi-calendar fs-4 text-warning"></i>
+          <p class="mb-0 small fw-500">Dec 15</p><small class="text-muted">Date</small>
+         </div>
+        </div>
+       </div><!-- Rider Info -->
+       <div class="card-custom p-4 mb-3">
+        <h6 class="fw-bold mb-3">Rider</h6>
+        <div class="d-flex align-items-center">
+         <div class="avatar avatar-sm me-3" style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+          R
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Rahim Ahmed</p>
+          <div class="rating-stars small"><i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-half"></i> <span class="ms-1">4.5</span>
+          </div>
+         </div><span class="text-muted small">Honda CBR</span>
+        </div>
+       </div><button class="btn btn-primary-custom w-100" onclick="showRatingPage('student')"> <i class="bi bi-star me-2"></i>Rate this Trip </button>
+      </div>
+     </div><!-- Student Account Page -->
+     <div class="page" id="studentAccountPage">
+      <div class="p-4 fade-in">
+       <h4 class="fw-bold mb-4"><i class="bi bi-person-circle me-2"></i>Account</h4><!-- Profile Card -->
+       <div class="card-custom p-4 mb-4 text-center">
+        <div class="avatar avatar-lg mx-auto mb-3" id="studentProfileAvatar">
+         S
+        </div>
+        <h5 class="fw-bold mb-1" id="studentProfileName">Student Name</h5>
+        <p class="text-muted mb-2" id="studentProfileId">IUB ID: 2012345</p>
+        <div class="rating-stars"><i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-half"></i> <span class="ms-1">4.5</span>
+        </div>
+       </div><!-- Menu Items -->
+       <div class="card-custom overflow-hidden">
+        <div class="p-3 border-bottom d-flex align-items-center" onclick="showWalletPage()">
+         <div class="me-3"><i class="bi bi-wallet2 fs-4 text-primary"></i>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Wallet</p><small class="text-muted">Balance: ৳500</small>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+        <div class="p-3 border-bottom d-flex align-items-center" onclick="showSettingsPage()">
+         <div class="me-3"><i class="bi bi-gear fs-4 text-secondary"></i>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Settings</p><small class="text-muted">Preferences &amp; notifications</small>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+        <div class="p-3 border-bottom d-flex align-items-center" onclick="showAboutPage()">
+         <div class="me-3"><i class="bi bi-info-circle fs-4 text-info"></i>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">About Us</p><small class="text-muted">Learn more about IUB Ride</small>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+        <div class="p-3 d-flex align-items-center" onclick="handleLogout()">
+         <div class="me-3"><i class="bi bi-box-arrow-right fs-4 text-danger"></i>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500 text-danger">Logout</p><small class="text-muted">Sign out of your account</small>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+       </div>
+      </div>
+     </div><!-- ============ RIDER PAGES ============ --> <!-- Rider Home Page -->
+     <div class="page" id="riderHomePage">
+      <div class="p-4 fade-in">
+       <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+         <h5 class="mb-1 fw-bold">Hello, <span id="riderNameDisplay">Rider</span>! 🏍️</h5>
+         <p class="text-muted small mb-0">Ready to accept rides?</p>
+        </div>
+        <div class="avatar avatar-sm" style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);" id="riderAvatarSmall">
+         R
+        </div>
+       </div><!-- Map -->
+       <div class="map-container mb-4" style="height: 220px;">
+        <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+        </div>
+       </div><!-- Status Toggle -->
+       <div class="card-custom p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+         <div>
+          <p class="mb-0 fw-500">Online Status</p><small class="text-muted">Toggle to receive ride requests</small>
+         </div>
+         <div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="riderOnlineToggle" style="width: 50px; height: 26px;" checked onchange="toggleRiderStatus()">
+         </div>
+        </div>
+       </div>
+       <h6 class="fw-bold mb-3"><i class="bi bi-lightning me-2"></i>Available Ride Requests</h6>
+       <div id="availableRideRequests">
+        <div class="available-ride-card" onclick="showRideRequestDetail(1)">
+         <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-3">
+            A
+           </div>
+           <div>
+            <p class="mb-0 fw-500">Anika Rahman</p>
+            <div class="rating-stars small"><i class="bi bi-star-fill"></i> <span class="ms-1">4.8</span>
+            </div>
+           </div>
+          </div><span class="badge bg-primary">৳120</span>
+         </div>
+         <div class="share-ride-info small">
+          <div class="d-flex justify-content-between"><span><i class="bi bi-geo-alt me-1"></i>IUB Campus</span> <span><i class="bi bi-arrow-right"></i></span> <span><i class="bi bi-geo-alt-fill me-1"></i>Gulshan</span>
+          </div>
+          <div class="mt-1 d-flex justify-content-between text-muted"><span><i class="bi bi-clock me-1"></i>2 min away</span> <span><i class="bi bi-signpost-split me-1"></i>4.5 km</span>
+          </div>
+         </div>
+         <div class="d-grid gap-2 mt-3"><button class="btn btn-success-custom btn-sm" onclick="event.stopPropagation(); acceptRide(1)"> <i class="bi bi-check-circle me-1"></i>Accept </button>
+         </div>
+        </div>
+        <div class="available-ride-card" onclick="showRideRequestDetail(2)">
+         <div class="d-flex justify-content-between align-items-start mb-2">
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-3" style="background: linear-gradient(135deg, #f9ab00 0%, #fbbc05 100%);">
+            T
+           </div>
+           <div>
+            <p class="mb-0 fw-500">Tanvir Hasan</p>
+            <div class="rating-stars small"><i class="bi bi-star-fill"></i> <span class="ms-1">4.5</span>
+            </div>
+           </div>
+          </div><span class="badge bg-primary">৳85</span>
+         </div>
+         <div class="share-ride-info small">
+          <div class="d-flex justify-content-between"><span><i class="bi bi-geo-alt me-1"></i>IUB Gate</span> <span><i class="bi bi-arrow-right"></i></span> <span><i class="bi bi-geo-alt-fill me-1"></i>Banani</span>
+          </div>
+          <div class="mt-1 d-flex justify-content-between text-muted"><span><i class="bi bi-clock me-1"></i>5 min away</span> <span><i class="bi bi-signpost-split me-1"></i>3.2 km</span>
+          </div>
+         </div>
+         <div class="d-grid gap-2 mt-3"><button class="btn btn-success-custom btn-sm" onclick="event.stopPropagation(); acceptRide(2)"> <i class="bi bi-check-circle me-1"></i>Accept </button>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div><!-- Rider Ride Start Page -->
+     <div class="page" id="riderRideStartPage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-car-front me-2"></i>Active Ride</h5>
+       </div><!-- Map -->
+       <div class="map-container mb-4" style="height: 200px;">
+        <div class="map-marker pulse-animation"><i class="bi bi-geo-alt-fill"></i>
+        </div>
+       </div><!-- Ride Status -->
+       <div class="card-custom p-4 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3"><span class="status-badge status-pending"> <i class="bi bi-lightning me-1"></i>In Progress </span> <span class="fw-bold text-primary fs-5">৳120</span>
+        </div>
+        <div class="mb-3">
+         <div class="d-flex align-items-start mb-2"><i class="bi bi-geo-alt text-danger me-2 mt-1"></i>
+          <div><small class="text-muted">Pickup</small>
+           <p class="mb-0 fw-500">IUB Campus</p>
+          </div>
+         </div>
+         <div class="d-flex align-items-start"><i class="bi bi-geo-alt-fill text-success me-2 mt-1"></i>
+          <div><small class="text-muted">Drop-off</small>
+           <p class="mb-0 fw-500">Gulshan, Road 11</p>
+          </div>
+         </div>
+        </div>
+       </div><!-- Passenger Info -->
+       <div class="card-custom p-4 mb-4">
+        <h6 class="fw-bold mb-3"><i class="bi bi-people me-2"></i>Passengers</h6>
+        <div class="d-flex align-items-center">
+         <div class="avatar avatar-sm me-3">
+          A
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Anika Rahman</p><small class="text-muted">01712345678</small>
+         </div><button class="btn btn-sm btn-outline-primary rounded-circle"> <i class="bi bi-telephone"></i> </button>
+        </div>
+       </div><button class="btn btn-success-custom w-100 btn-lg" onclick="finishRide()"> <i class="bi bi-check-circle me-2"></i>Finish Ride </button>
+      </div>
+     </div><!-- Rider Activity Page -->
+     <div class="page" id="riderActivityPage">
+      <div class="p-4 fade-in">
+       <h4 class="fw-bold mb-4"><i class="bi bi-activity me-2"></i>Activity</h4>
+       <div id="riderActivityContent"><!-- Active Ride -->
+        <div id="riderActiveRide" class="d-none">
+         <div class="map-container mb-4" style="height: 200px;">
+          <div class="map-marker pulse-animation"><i class="bi bi-geo-alt-fill"></i>
+          </div>
+         </div>
+         <div class="card-custom p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3"><span class="status-badge status-pending"> <i class="bi bi-lightning me-1"></i>Ride Pending </span> <span class="fw-bold text-primary">৳120</span>
+          </div>
+          <h6 class="fw-bold mb-3">Passenger</h6>
+          <div class="d-flex align-items-center mb-3">
+           <div class="avatar avatar-sm me-3">
+            A
+           </div>
+           <div class="flex-grow-1">
+            <p class="mb-0 fw-500">Anika Rahman</p><small class="text-muted">Waiting for pickup</small>
+           </div><button class="btn btn-sm btn-outline-primary rounded-circle me-2"> <i class="bi bi-telephone"></i> </button> <button class="btn btn-sm btn-outline-success rounded-circle"> <i class="bi bi-chat"></i> </button>
+          </div>
+          <div class="share-ride-info">
+           <div class="d-flex align-items-start mb-2"><i class="bi bi-geo-alt text-danger me-2"></i> <span class="small">IUB Campus, Main Gate</span>
+           </div>
+           <div class="d-flex align-items-start"><i class="bi bi-geo-alt-fill text-success me-2"></i> <span class="small">Gulshan, Road 11</span>
+           </div>
+          </div><button class="btn btn-primary-custom w-100 mt-3" onclick="startRide()"> <i class="bi bi-play-circle me-2"></i>Start Ride </button>
+         </div>
+        </div><!-- No Activity -->
+        <div id="riderNoActivity">
+         <div class="text-center py-5"><i class="bi bi-inbox fs-1 text-muted"></i>
+          <h5 class="mt-3">No Active Rides</h5>
+          <p class="text-muted">Accept a ride request to get started</p><button class="btn btn-primary-custom" onclick="showRiderPage('home')"> <i class="bi bi-house me-2"></i>Go to Home </button>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div><!-- Rider History Page -->
+     <div class="page" id="riderHistoryPage">
+      <div class="p-4 fade-in">
+       <h4 class="fw-bold mb-4"><i class="bi bi-clock-history me-2"></i>Ride History</h4>
+       <div id="riderHistoryList">
+        <div class="history-item" onclick="showIndividualHistory('rider', 1)">
+         <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+           <p class="mb-0 fw-500">IUB Campus → Gulshan</p><small class="text-muted">Dec 15, 2024 • 3:00 PM</small>
+          </div><span class="status-badge status-completed">Completed</span>
+         </div>
+         <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-2" style="width: 30px; height: 30px; font-size: 0.7rem;">
+            A
+           </div><small>Anika Rahman</small>
+          </div><span class="fw-bold text-success">+৳120</span>
+         </div>
+        </div>
+        <div class="history-item" onclick="showIndividualHistory('rider', 2)">
+         <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+           <p class="mb-0 fw-500">Banani → IUB Campus</p><small class="text-muted">Dec 15, 2024 • 10:30 AM</small>
+          </div><span class="status-badge status-completed">Completed</span>
+         </div>
+         <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-2" style="width: 30px; height: 30px; font-size: 0.7rem; background: linear-gradient(135deg, #f9ab00 0%, #fbbc05 100%);">
+            T
+           </div><small>Tanvir Hasan</small>
+          </div><span class="fw-bold text-success">+৳95</span>
+         </div>
+        </div>
+        <div class="history-item" onclick="showIndividualHistory('rider', 3)">
+         <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+           <p class="mb-0 fw-500">Uttara → IUB Campus</p><small class="text-muted">Dec 14, 2024 • 8:00 AM</small>
+          </div><span class="status-badge status-completed">Completed</span>
+         </div>
+         <div class="d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center">
+           <div class="avatar avatar-sm me-2" style="width: 30px; height: 30px; font-size: 0.7rem;">
+            S
+           </div><small>Sadia Akter</small>
+          </div><span class="fw-bold text-success">+৳180</span>
+         </div>
+        </div>
+       </div>
+      </div>
+     </div><!-- Rider Individual History Page -->
+     <div class="page" id="riderIndividualHistoryPage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="switchNavTab('history')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Trip Details</h5>
+       </div><!-- Map -->
+       <div class="map-container mb-4" style="height: 180px;">
+        <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+        </div>
+       </div><!-- Trip Info -->
+       <div class="card-custom p-4 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-3"><span class="status-badge status-completed">Completed</span> <span class="fw-bold fs-5 text-success">+৳120</span>
+        </div>
+        <div class="mb-3">
+         <div class="d-flex align-items-start mb-2"><i class="bi bi-geo-alt text-danger me-2 mt-1"></i>
+          <div><small class="text-muted">Pickup</small>
+           <p class="mb-0 fw-500">IUB Campus, Main Gate</p>
+          </div>
+         </div>
+         <div class="d-flex align-items-start"><i class="bi bi-geo-alt-fill text-success me-2 mt-1"></i>
+          <div><small class="text-muted">Drop-off</small>
+           <p class="mb-0 fw-500">Gulshan, Road 11</p>
+          </div>
+         </div>
+        </div>
+        <hr>
+        <div class="row text-center">
+         <div class="col-4"><i class="bi bi-clock fs-4 text-primary"></i>
+          <p class="mb-0 small fw-500">20 min</p><small class="text-muted">Duration</small>
+         </div>
+         <div class="col-4"><i class="bi bi-signpost-split fs-4 text-success"></i>
+          <p class="mb-0 small fw-500">4.5 km</p><small class="text-muted">Distance</small>
+         </div>
+         <div class="col-4"><i class="bi bi-calendar fs-4 text-warning"></i>
+          <p class="mb-0 small fw-500">Dec 15</p><small class="text-muted">Date</small>
+         </div>
+        </div>
+       </div><!-- Passenger Info -->
+       <div class="card-custom p-4 mb-3">
+        <h6 class="fw-bold mb-3">Passenger</h6>
+        <div class="d-flex align-items-center">
+         <div class="avatar avatar-sm me-3">
+          A
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Anika Rahman</p>
+          <div class="rating-stars small"><i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <span class="ms-1">5.0</span>
+          </div>
+         </div>
+        </div>
+       </div><button class="btn btn-primary-custom w-100" onclick="showRatingPage('rider')"> <i class="bi bi-star me-2"></i>Rate Passenger </button>
+      </div>
+     </div><!-- Rider Account Page -->
+     <div class="page" id="riderAccountPage">
+      <div class="p-4 fade-in">
+       <h4 class="fw-bold mb-4"><i class="bi bi-person-circle me-2"></i>Account</h4><!-- Profile Card -->
+       <div class="card-custom p-4 mb-4 text-center">
+        <div class="avatar avatar-lg mx-auto mb-3" style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);" id="riderProfileAvatar">
+         R
+        </div>
+        <h5 class="fw-bold mb-1" id="riderProfileName">Rider Name</h5>
+        <p class="text-muted mb-2" id="riderProfileLicence">License: ABC-1234</p>
+        <div class="rating-stars"><i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i class="bi bi-star"></i> <span class="ms-1">4.0</span>
+        </div>
+       </div><!-- Today's Earnings -->
+       <div class="wallet-card mb-4">
+        <p class="small opacity-75 mb-1">Today's Earnings</p>
+        <h3 class="fw-bold mb-0">৳1,250</h3>
+        <p class="small mb-0 mt-2">8 rides completed</p>
+       </div><!-- Menu Items -->
+       <div class="card-custom overflow-hidden">
+        <div class="p-3 border-bottom d-flex align-items-center" onclick="showWalletPage()">
+         <div class="me-3"><i class="bi bi-wallet2 fs-4 text-primary"></i>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Wallet</p><small class="text-muted">Total Balance: ৳5,500</small>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+        <div class="p-3 border-bottom d-flex align-items-center" onclick="showSettingsPage()">
+         <div class="me-3"><i class="bi bi-gear fs-4 text-secondary"></i>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Settings</p><small class="text-muted">Vehicle &amp; preferences</small>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+        <div class="p-3 border-bottom d-flex align-items-center" onclick="showAboutPage()">
+         <div class="me-3"><i class="bi bi-info-circle fs-4 text-info"></i>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">About Us</p><small class="text-muted">Learn more about IUB Ride</small>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+        <div class="p-3 d-flex align-items-center" onclick="handleLogout()">
+         <div class="me-3"><i class="bi bi-box-arrow-right fs-4 text-danger"></i>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500 text-danger">Logout</p><small class="text-muted">Sign out of your account</small>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+       </div>
+      </div>
+     </div><!-- ============ SHARED PAGES ============ --> <!-- Rating Page -->
+     <div class="page" id="ratingPage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="goBackFromRating()"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Rate Your Experience</h5>
+       </div>
+       <div class="card-custom p-5 text-center">
+        <div class="avatar avatar-lg mx-auto mb-3" id="rateAvatar">
+         R
+        </div>
+        <h5 class="fw-bold mb-1" id="rateName">Rahim Ahmed</h5>
+        <p class="text-muted mb-4" id="rateSubtext">How was your ride?</p>
+        <div class="rating-input mb-4" id="ratingStars"><i class="bi bi-star fs-1 mx-1" data-rating="1" onclick="setRating(1)" style="cursor: pointer; color: #e8eaed;"></i> <i class="bi bi-star fs-1 mx-1" data-rating="2" onclick="setRating(2)" style="cursor: pointer; color: #e8eaed;"></i> <i class="bi bi-star fs-1 mx-1" data-rating="3" onclick="setRating(3)" style="cursor: pointer; color: #e8eaed;"></i> <i class="bi bi-star fs-1 mx-1" data-rating="4" onclick="setRating(4)" style="cursor: pointer; color: #e8eaed;"></i> <i class="bi bi-star fs-1 mx-1" data-rating="5" onclick="setRating(5)" style="cursor: pointer; color: #e8eaed;"></i>
+        </div><textarea class="form-control input-custom mb-4" rows="3" placeholder="Leave a comment (optional)" id="ratingComment"></textarea> <button class="btn btn-primary-custom w-100 btn-lg" onclick="submitRating()"> <i class="bi bi-send me-2"></i>Submit Rating </button>
+       </div>
+      </div>
+     </div><!-- Wallet Page -->
+     <div class="page" id="walletPage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="switchNavTab('account')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Wallet</h5>
+       </div>
+       <div class="wallet-card mb-4">
+        <p class="small opacity-75 mb-1">Available Balance</p>
+        <h2 class="fw-bold mb-3">৳500</h2>
+        <div class="d-flex gap-2"><button class="btn btn-light btn-sm rounded-pill"> <i class="bi bi-plus me-1"></i>Add Money </button> <button class="btn btn-outline-light btn-sm rounded-pill"> <i class="bi bi-arrow-up me-1"></i>Withdraw </button>
+        </div>
+       </div>
+       <h6 class="fw-bold mb-3">Recent Transactions</h6>
+       <div class="card-custom overflow-hidden">
+        <div class="p-3 border-bottom d-flex align-items-center">
+         <div class="me-3">
+          <div class="rounded-circle bg-success-subtle p-2"><i class="bi bi-plus text-success"></i>
+          </div>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Added to Wallet</p><small class="text-muted">Dec 15, 2024</small>
+         </div><span class="text-success fw-bold">+৳200</span>
+        </div>
+        <div class="p-3 border-bottom d-flex align-items-center">
+         <div class="me-3">
+          <div class="rounded-circle bg-danger-subtle p-2"><i class="bi bi-dash text-danger"></i>
+          </div>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Ride Payment</p><small class="text-muted">Dec 15, 2024</small>
+         </div><span class="text-danger fw-bold">-৳120</span>
+        </div>
+        <div class="p-3 d-flex align-items-center">
+         <div class="me-3">
+          <div class="rounded-circle bg-success-subtle p-2"><i class="bi bi-plus text-success"></i>
+          </div>
+         </div>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Added to Wallet</p><small class="text-muted">Dec 14, 2024</small>
+         </div><span class="text-success fw-bold">+৳500</span>
+        </div>
+       </div>
+      </div>
+     </div><!-- Settings Page -->
+     <div class="page" id="settingsPage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="switchNavTab('account')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">Settings</h5>
+       </div>
+       <div class="card-custom overflow-hidden mb-4">
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+         <div>
+          <p class="mb-0 fw-500">Notifications</p><small class="text-muted">Receive ride alerts</small>
+         </div>
+         <div class="form-check form-switch"><input class="form-check-input" type="checkbox" checked>
+         </div>
+        </div>
+        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+         <div>
+          <p class="mb-0 fw-500">Sound</p><small class="text-muted">Play notification sounds</small>
+         </div>
+         <div class="form-check form-switch"><input class="form-check-input" type="checkbox" checked>
+         </div>
+        </div>
+        <div class="p-3 d-flex justify-content-between align-items-center">
+         <div>
+          <p class="mb-0 fw-500">Location</p><small class="text-muted">Share your location</small>
+         </div>
+         <div class="form-check form-switch"><input class="form-check-input" type="checkbox" checked>
+         </div>
+        </div>
+       </div>
+       <h6 class="fw-bold mb-3">Account</h6>
+       <div class="card-custom overflow-hidden">
+        <div class="p-3 border-bottom d-flex align-items-center"><i class="bi bi-person me-3 fs-5"></i>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Edit Profile</p>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+        <div class="p-3 border-bottom d-flex align-items-center"><i class="bi bi-shield-lock me-3 fs-5"></i>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Privacy</p>
+         </div><i class="bi bi-chevron-right text-muted"></i>
+        </div>
+        <div class="p-3 d-flex align-items-center"><i class="bi bi-translate me-3 fs-5"></i>
+         <div class="flex-grow-1">
+          <p class="mb-0 fw-500">Language</p>
+         </div><span class="text-muted me-2">English</span> <i class="bi bi-chevron-right text-muted"></i>
+        </div>
+       </div>
+      </div>
+     </div><!-- About Page -->
+     <div class="page" id="aboutPage">
+      <div class="p-4 fade-in">
+       <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3" onclick="switchNavTab('account')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+        <h5 class="mb-0 fw-bold">About Us</h5>
+       </div>
+       <div class="text-center mb-4"><i class="bi bi-car-front-fill fs-1 text-primary"></i>
+        <h4 class="fw-bold mt-2 logo-text">IUB Ride Share</h4>
+        <p class="text-muted">Version 1.0.0</p>
+       </div>
+       <div class="card-custom p-4 mb-4">
+        <h6 class="fw-bold mb-3">About IUB Ride Share</h6>
+        <p class="text-muted mb-0">IUB Ride Share is a campus transportation solution designed exclusively for Independent University Bangladesh (IUB) students and staff. Our mission is to provide safe, affordable, and convenient rides within the campus and surrounding areas.</p>
+       </div>
+       <div class="card-custom p-4 mb-4">
+        <h6 class="fw-bold mb-3">Contact Us</h6>
+        <div class="d-flex align-items-center mb-2"><i class="bi bi-envelope me-3 text-primary"></i> <span>rideshare@iub.edu.bd</span>
+        </div>
+        <div class="d-flex align-items-center mb-2"><i class="bi bi-telephone me-3 text-primary"></i> <span>+880 2 840 1645</span>
+        </div>
+        <div class="d-flex align-items-center"><i class="bi bi-geo-alt me-3 text-primary"></i> <span>IUB Campus, Bashundhara R/A</span>
+        </div>
+       </div>
+       <div class="text-center text-muted small">
+        <p class="mb-1">© 2024 IUB Ride Share. All rights reserved.</p><a href="#" class="text-primary me-2">Terms of Service</a> <a href="#" class="text-primary">Privacy Policy</a>
+       </div>
+      </div>
+     </div>
+    </div><!-- Bottom Navigation -->
+    <nav class="bottom-nav d-flex" id="bottomNav">
+     <div class="nav-item active" data-tab="home" onclick="switchNavTab('home')"><i class="bi bi-house-door"></i>
+      <p class="mb-0 small">Home</p>
+     </div>
+     <div class="nav-item" data-tab="activity" onclick="switchNavTab('activity')"><i class="bi bi-activity"></i>
+      <p class="mb-0 small">Activity</p>
+     </div>
+     <div class="nav-item" data-tab="history" onclick="switchNavTab('history')"><i class="bi bi-clock-history"></i>
+      <p class="mb-0 small">History</p>
+     </div>
+     <div class="nav-item" data-tab="account" onclick="switchNavTab('account')"><i class="bi bi-person"></i>
+      <p class="mb-0 small">Account</p>
+     </div>
+    </nav>
+   </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+        // App State
+        let appState = {
+            isLoggedIn: false,
+            userType: null, // 'student' or 'rider'
+            currentUser: null,
+            loginType: 'student',
+            accountType: 'student',
+            selectedRideType: null,
+            currentRating: 0,
+            ratingContext: null,
+            users: []
+        };
+        
+        const defaultConfig = {
+            app_title: 'IUB Ride Share'
+        };
+        
+        let config = { ...defaultConfig };
+        
+        // Initialize Element SDK
+        if (window.elementSdk) {
+            window.elementSdk.init({
+                defaultConfig,
+                onConfigChange: async (newConfig) => {
+                    config = { ...defaultConfig, ...newConfig };
+                    document.title = config.app_title;
+                },
+                mapToCapabilities: (cfg) => ({
+                    recolorables: [],
+                    borderables: [],
+                    fontEditable: undefined,
+                    fontSizeable: undefined
+                }),
+                mapToEditPanelValues: (cfg) => new Map([
+                    ['app_title', cfg.app_title || defaultConfig.app_title]
+                ])
+            });
+        }
+        
+        // Initialize Data SDK
+        const dataHandler = {
+            onDataChanged(data) {
+                appState.users = data;
+            }
+        };
+        
+        async function initDataSdk() {
+            if (window.dataSdk) {
+                const result = await window.dataSdk.init(dataHandler);
+                if (!result.isOk) {
+                    console.error('Failed to initialize Data SDK');
+                }
+            }
+        }
+        
+        initDataSdk();
+        
+        // Toast notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            
+            const iconMap = {
+                success: 'bi-check-circle-fill text-success',
+                error: 'bi-x-circle-fill text-danger',
+                warning: 'bi-exclamation-circle-fill text-warning',
+                info: 'bi-info-circle-fill text-primary'
+            };
+            
+            toast.innerHTML = `
+                <i class="bi ${iconMap[type]} fs-4"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // Page Navigation
+        function showPage(pageId) {
+            document.querySelectorAll('#authPages .page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+        
+        // Login type selection
+        function selectLoginType(type, element) {
+            appState.loginType = type;
+            document.querySelectorAll('#loginPage .user-type-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            
+            if (type === 'student') {
+                document.getElementById('studentLoginField').classList.remove('d-none');
+                document.getElementById('riderLoginField').classList.add('d-none');
+            } else {
+                document.getElementById('studentLoginField').classList.add('d-none');
+                document.getElementById('riderLoginField').classList.remove('d-none');
+            }
+        }
+        
+        // Account type selection
+        function selectAccountType(type, element) {
+            appState.accountType = type;
+            document.querySelectorAll('#createAccountPage .user-type-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            
+            if (type === 'student') {
+                document.getElementById('studentFields').classList.remove('d-none');
+                document.getElementById('riderFields').classList.add('d-none');
+            } else {
+                document.getElementById('studentFields').classList.add('d-none');
+                document.getElementById('riderFields').classList.remove('d-none');
+            }
+        }
+        
+        // Handle image upload
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const icon = document.getElementById('imageIcon');
+                icon.className = 'bi bi-check-circle fs-2 text-success';
+            }
+        }
+        
+        // Handle Login
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            let identifier;
+            if (appState.loginType === 'student') {
+                identifier = document.getElementById('loginIubId').value.trim();
+                if (!identifier) {
+                    showToast('Please enter your IUB ID', 'error');
+                    return;
+                }
+            } else {
+                identifier = document.getElementById('loginLicenceNo').value.trim();
+                if (!identifier) {
+                    showToast('Please enter your license number', 'error');
+                    return;
+                }
+            }
+            
+            // Find user in data
+            const user = appState.users.find(u => 
+                (appState.loginType === 'student' && u.iub_id === identifier) ||
+                (appState.loginType === 'rider' && u.licence_no === identifier)
+            );
+            
+            if (user) {
+                appState.isLoggedIn = true;
+                appState.userType = user.type;
+                appState.currentUser = user;
+                showMainApp();
+                showToast('Welcome back, ' + user.name + '!', 'success');
+            } else {
+                // Demo login for testing
+                appState.isLoggedIn = true;
+                appState.userType = appState.loginType;
+                appState.currentUser = {
+                    type: appState.loginType,
+                    name: appState.loginType === 'student' ? 'Demo Student' : 'Demo Rider',
+                    iub_id: appState.loginType === 'student' ? identifier : '',
+                    licence_no: appState.loginType === 'rider' ? identifier : '',
+                    rating: 4.5,
+                    wallet: 500
+                };
+                showMainApp();
+                showToast('Logged in as demo user', 'info');
+            }
+        }
+        
+        // Handle Create Account
+        async function handleCreateAccount(event) {
+            event.preventDefault();
+            
+            const btn = document.getElementById('createAccountBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+            
+            let userData = {
+                type: appState.accountType,
+                created_at: new Date().toISOString(),
+                rating: 5.0,
+                wallet: 0
+            };
+            
+            if (appState.accountType === 'student') {
+                const iubId = document.getElementById('regIubId').value.trim();
+                const name = document.getElementById('regStudentName').value.trim();
+                const gender = document.getElementById('regStudentGender').value;
+                const phone = document.getElementById('regStudentPhone').value.trim();
+                const email = document.getElementById('regStudentEmail').value.trim();
+                const emergency = document.getElementById('regStudentEmergency').value.trim();
+                const address = document.getElementById('regStudentAddress').value.trim();
+                
+                if (!iubId || !name || !gender || !phone || !email || !emergency || !address) {
+                    showToast('Please fill in all required fields', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                    return;
+                }
+                
+                userData = {
+                    ...userData,
+                    iub_id: iubId,
+                    name: name,
+                    gender: gender,
+                    phone: phone,
+                    email: email,
+                    emergency_contact: emergency,
+                    home_address: address,
+                    licence_no: '',
+                    image: ''
+                };
+            } else {
+                const licenceNo = document.getElementById('regLicenceNo').value.trim();
+                const name = document.getElementById('regRiderName').value.trim();
+                const gender = document.getElementById('regRiderGender').value;
+                const phone = document.getElementById('regRiderPhone').value.trim();
+                const email = document.getElementById('regRiderEmail').value.trim();
+                const emergency = document.getElementById('regRiderEmergency').value.trim();
+                
+                if (!licenceNo || !name || !gender || !phone || !email || !emergency) {
+                    showToast('Please fill in all required fields', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                    return;
+                }
+                
+                userData = {
+                    ...userData,
+                    licence_no: licenceNo,
+                    name: name,
+                    gender: gender,
+                    phone: phone,
+                    email: email,
+                    emergency_contact: emergency,
+                    iub_id: '',
+                    home_address: '',
+                    image: ''
+                };
+            }
+            
+            // Check data limit
+            if (appState.users.length >= 999) {
+                showToast('Account limit reached. Please try again later.', 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                return;
+            }
+            
+            if (window.dataSdk) {
+                const result = await window.dataSdk.create(userData);
+                if (result.isOk) {
+                    showToast('Account created successfully!', 'success');
+                    appState.isLoggedIn = true;
+                    appState.userType = userData.type;
+                    appState.currentUser = userData;
+                    showMainApp();
+                } else {
+                    showToast('Failed to create account. Please try again.', 'error');
+                }
+            } else {
+                // Demo mode
+                appState.isLoggedIn = true;
+                appState.userType = userData.type;
+                appState.currentUser = userData;
+                showMainApp();
+                showToast('Account created (demo mode)', 'success');
+            }
+            
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+        }
+        
+        // Show Main App
+        function showMainApp() {
+            document.getElementById('authPages').classList.add('d-none');
+            document.getElementById('mainApp').classList.remove('d-none');
+            
+            updateProfileDisplays();
+            
+            if (appState.userType === 'student') {
+                showStudentPage('home');
+            } else {
+                showRiderPage('home');
+            }
+        }
+        
+        // Update profile displays
+        function updateProfileDisplays() {
+            if (appState.currentUser) {
+                const initial = appState.currentUser.name ? appState.currentUser.name.charAt(0).toUpperCase() : 'U';
+                
+                if (appState.userType === 'student') {
+                    document.getElementById('studentNameDisplay').textContent = appState.currentUser.name || 'Student';
+                    document.getElementById('studentAvatarSmall').textContent = initial;
+                    document.getElementById('studentProfileAvatar').textContent = initial;
+                    document.getElementById('studentProfileName').textContent = appState.currentUser.name || 'Student Name';
+                    document.getElementById('studentProfileId').textContent = 'IUB ID: ' + (appState.currentUser.iub_id || 'N/A');
+                } else {
+                    document.getElementById('riderNameDisplay').textContent = appState.currentUser.name || 'Rider';
+                    document.getElementById('riderAvatarSmall').textContent = initial;
+                    document.getElementById('riderProfileAvatar').textContent = initial;
+                    document.getElementById('riderProfileName').textContent = appState.currentUser.name || 'Rider Name';
+                    document.getElementById('riderProfileLicence').textContent = 'License: ' + (appState.currentUser.licence_no || 'N/A');
+                }
+            }
+        }
+        
+        // Switch Nav Tab
+        function switchNavTab(tab) {
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelector(`.nav-item[data-tab="${tab}"]`).classList.add('active');
+            
+            if (appState.userType === 'student') {
+                showStudentPage(tab);
+            } else {
+                showRiderPage(tab);
+            }
+        }
+        
+        // Show Student Page
+        function showStudentPage(page) {
+            document.querySelectorAll('#mainContent .page').forEach(p => p.classList.remove('active'));
+            
+            const pageMap = {
+                'home': 'studentHomePage',
+                'ride': 'studentRidePage',
+                'confirmRide': 'studentConfirmRidePage',
+                'shareRide': 'studentShareRidePage',
+                'availableRide': 'studentAvailableRidePage',
+                'activity': 'studentActivityPage',
+                'history': 'studentHistoryPage',
+                'individualHistory': 'studentIndividualHistoryPage',
+                'account': 'studentAccountPage'
+            };
+            
+            const pageId = pageMap[page];
+            if (pageId) {
+                document.getElementById(pageId).classList.add('active');
+            }
+        }
+        
+        // Show Rider Page
+        function showRiderPage(page) {
+            document.querySelectorAll('#mainContent .page').forEach(p => p.classList.remove('active'));
+            
+            const pageMap = {
+                'home': 'riderHomePage',
+                'rideStart': 'riderRideStartPage',
+                'activity': 'riderActivityPage',
+                'history': 'riderHistoryPage',
+                'individualHistory': 'riderIndividualHistoryPage',
+                'account': 'riderAccountPage'
+            };
+            
+            const pageId = pageMap[page];
+            if (pageId) {
+                document.getElementById(pageId).classList.add('active');
+            }
+        }
+        
+        // Select Ride Type
+        function selectRideType(type, element) {
+            appState.selectedRideType = type;
+            document.querySelectorAll('.ride-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+        
+        // Go to Ride Page
+        function goToRidePage() {
+            const pickup = document.getElementById('pickupLocation').value.trim();
+            const drop = document.getElementById('dropLocation').value.trim();
+            
+            if (!pickup || !drop) {
+                showToast('Please enter pickup and drop locations', 'warning');
+                return;
+            }
+            
+            showStudentPage('ride');
+        }
+        
+        // Search Individual Ride
+        function searchIndividualRide() {
+            showToast('Searching for individual rides...', 'info');
+            setTimeout(() => {
+                showStudentPage('confirmRide');
+            }, 1500);
+        }
+        
+        // Search Share Ride
+        function searchShareRide() {
+            showStudentPage('shareRide');
+        }
+        
+        // Select Share Ride
+        function selectShareRide(rideId) {
+            showStudentPage('availableRide');
+        }
+        
+        // Create New Share Ride
+        function createNewShareRide() {
+            showToast('Creating new share ride...', 'info');
+            setTimeout(() => {
+                showToast('Share ride created! Waiting for passengers.', 'success');
+            }, 1000);
+        }
+        
+        // Confirm Ride
+        function confirmRide() {
+            showToast('Ride confirmed! Your rider is on the way.', 'success');
+            
+            // Show activity with active ride
+            document.getElementById('noActivityState').classList.add('d-none');
+            document.getElementById('searchingState').classList.add('d-none');
+            document.getElementById('activeRideState').classList.remove('d-none');
+            
+            switchNavTab('activity');
+        }
+        
+        // Confirm Share Ride
+        function confirmShareRide() {
+            showToast('You have joined the share ride!', 'success');
+            
+            document.getElementById('noActivityState').classList.add('d-none');
+            document.getElementById('searchingState').classList.add('d-none');
+            document.getElementById('activeRideState').classList.remove('d-none');
+            
+            switchNavTab('activity');
+        }
+        
+        // Look for More Riders
+        function lookForMoreRiders() {
+            showToast('Searching for more options...', 'info');
+            
+            document.getElementById('noActivityState').classList.add('d-none');
+            document.getElementById('activeRideState').classList.add('d-none');
+            document.getElementById('searchingState').classList.remove('d-none');
+            
+            switchNavTab('activity');
+            
+            setTimeout(() => {
+                document.getElementById('searchingState').classList.add('d-none');
+                showStudentPage('confirmRide');
+                showToast('Found another rider!', 'success');
+            }, 3000);
+        }
+        
+        // Emergency Call
+        function emergencyCall() {
+            showToast('Contacting emergency services...', 'warning');
+        }
+        
+        // Show Individual History
+        function showIndividualHistory(userType, historyId) {
+            if (userType === 'student') {
+                showStudentPage('individualHistory');
+            } else {
+                showRiderPage('individualHistory');
+            }
+        }
+        
+        // Show Rating Page
+        function showRatingPage(context) {
+            appState.ratingContext = context;
+            appState.currentRating = 0;
+            
+            // Reset stars
+            document.querySelectorAll('#ratingStars i').forEach(star => {
+                star.classList.remove('bi-star-fill');
+                star.classList.add('bi-star');
+                star.style.color = '#e8eaed';
+            });
+            
+            document.getElementById('ratingComment').value = '';
+            
+            document.querySelectorAll('#mainContent .page').forEach(p => p.classList.remove('active'));
+            document.getElementById('ratingPage').classList.add('active');
+        }
+        
+        // Go Back From Rating
+        function goBackFromRating() {
+            switchNavTab('history');
+        }
+        
+        // Set Rating
+        function setRating(rating) {
+            appState.currentRating = rating;
+            
+            document.querySelectorAll('#ratingStars i').forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.remove('bi-star');
+                    star.classList.add('bi-star-fill');
+                    star.style.color = '#ffc107';
+                } else {
+                    star.classList.remove('bi-star-fill');
+                    star.classList.add('bi-star');
+                    star.style.color = '#e8eaed';
+                }
+            });
+        }
+        
+        // Submit Rating
+        function submitRating() {
+            if (appState.currentRating === 0) {
+                showToast('Please select a rating', 'warning');
+                return;
+            }
+            
+            showToast('Thank you for your feedback!', 'success');
+            switchNavTab('history');
+        }
+        
+        // Rider Functions
+        function toggleRiderStatus() {
+            const toggle = document.getElementById('riderOnlineToggle');
+            if (toggle.checked) {
+                showToast('You are now online', 'success');
+            } else {
+                showToast('You are now offline', 'info');
+            }
+        }
+        
+        function showRideRequestDetail(requestId) {
+            showToast('Loading ride details...', 'info');
+        }
+        
+        function acceptRide(rideId) {
+            showToast('Ride accepted! Navigate to pickup location.', 'success');
+            
+            document.getElementById('riderNoActivity').classList.add('d-none');
+            document.getElementById('riderActiveRide').classList.remove('d-none');
+            
+            switchNavTab('activity');
+        }
+        
+        function startRide() {
+            showToast('Ride started!', 'success');
+            showRiderPage('rideStart');
+        }
+        
+        function finishRide() {
+            showToast('Ride completed! Earnings added to wallet.', 'success');
+            
+            document.getElementById('riderActiveRide').classList.add('d-none');
+            document.getElementById('riderNoActivity').classList.remove('d-none');
+            
+            showRatingPage('rider');
+        }
+        
+        // Shared Functions
+        function showWalletPage() {
+            document.querySelectorAll('#mainContent .page').forEach(p => p.classList.remove('active'));
+            document.getElementById('walletPage').classList.add('active');
+        }
+        
+        function showSettingsPage() {
+            document.querySelectorAll('#mainContent .page').forEach(p => p.classList.remove('active'));
+            document.getElementById('settingsPage').classList.add('active');
+        }
+        
+        function showAboutPage() {
+            document.querySelectorAll('#mainContent .page').forEach(p => p.classList.remove('active'));
+            document.getElementById('aboutPage').classList.add('active');
+        }
+        
+        function showFilterModal() {
+            showToast('Filter options coming soon!', 'info');
+        }
+        
+        function handleLogout() {
+            appState.isLoggedIn = false;
+            appState.userType = null;
+            appState.currentUser = null;
+            
+            document.getElementById('mainApp').classList.add('d-none');
+            document.getElementById('authPages').classList.remove('d-none');
+            
+            // Reset to welcome page
+            showPage('welcomePage');
+            
+            // Reset forms
+            document.getElementById('loginForm').reset();
+            document.getElementById('createAccountForm').reset();
+            
+            showToast('Logged out successfully', 'info');
+        }
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9d21d224e6d0a494',t:'MTc3MTc5ODMwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
