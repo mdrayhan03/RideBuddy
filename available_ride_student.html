@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ride Details - IUB Ride Share</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="/_sdk/element_sdk.js"></script>
+</head>
+
+<body>
+    <div class="app-container" id="app">
+        <div class="toast-container" id="toastContainer"></div>
+        <div id="mainApp">
+            <div class="main-content" id="mainContent">
+                <div class="page active" id="studentAvailableRidePage">
+                    <div class="p-4 fade-in">
+                        <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3"
+                                onclick="navigateTo('share_ride_student')"> <i class="bi bi-arrow-left fs-4"></i>
+                            </button>
+                            <h5 class="mb-0 fw-bold">Ride Details</h5>
+                        </div><!-- Map -->
+                        <div class="map-container mb-4" style="height: 180px;">
+                            <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+                            </div>
+                        </div><!-- Rider Info -->
+                        <div class="card-custom p-4 mb-3">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-person-badge me-2"></i>Rider Information</h6>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-3">K</div>
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 fw-500">Karim Rahman</p>
+                                    <div class="rating-stars small"><i class="bi bi-star-fill"></i> <i
+                                            class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i
+                                            class="bi bi-star-fill"></i> <i class="bi bi-star"></i> <span
+                                            class="ms-1">4.0</span>
+                                    </div>
+                                </div><button class="btn btn-sm btn-outline-primary rounded-circle"> <i
+                                        class="bi bi-telephone"></i> </button>
+                            </div>
+                        </div><!-- Other Passengers -->
+                        <div class="card-custom p-4 mb-4">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-people me-2"></i>Other Passengers (2)</h6>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <div class="d-flex align-items-center bg-light rounded-pill px-3 py-2">
+                                    <div class="avatar avatar-sm me-2"
+                                        style="width: 30px; height: 30px; font-size: 0.8rem;">A</div><span
+                                        class="small">Anika</span>
+                                </div>
+                                <div class="d-flex align-items-center bg-light rounded-pill px-3 py-2">
+                                    <div class="avatar avatar-sm me-2"
+                                        style="width: 30px; height: 30px; font-size: 0.8rem; background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+                                        T</div><span class="small">Tanvir</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-grid gap-3"><button class="btn btn-success-custom btn-lg"
+                                onclick="confirmShareRide()"> <i class="bi bi-check-circle me-2"></i>Confirm Join
+                            </button> <button class="btn btn-secondary-custom"
+                                onclick="navigateTo('share_ride_student')"> <i class="bi bi-search me-2"></i>Look for
+                                More Options </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - IUB Ride Share</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="/_sdk/element_sdk.js"></script>
+</head>
+
+<body>
+    <div class="app-container" id="app">
+        <div class="toast-container" id="toastContainer"></div>
+        <div id="mainApp">
+            <div class="main-content" id="mainContent">
+                <div class="page active" id="studentHomePage">
+                    <div class="p-4 fade-in">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h5 class="mb-1 fw-bold">Hello, <span id="studentNameDisplay">Student</span>! 👋</h5>
+                                <p class="text-muted small mb-0">Where would you like to go?</p>
+                            </div>
+                            <div class="avatar avatar-sm" id="studentAvatarSmall">S</div>
+                        </div><!-- Location Input -->
+                        <div class="card-custom p-3 mb-4">
+                            <div class="d-flex gap-2">
+                                <div class="flex-grow-1">
+                                    <div class="input-group"><span
+                                            class="input-group-text bg-white border-end-0 rounded-start-3"> <i
+                                                class="bi bi-geo-alt text-danger"></i> </span> <input type="text"
+                                            class="form-control border-start-0 rounded-end-3" id="pickupLocation"
+                                            placeholder="Enter pickup location">
+                                    </div>
+                                </div><button class="filter-btn" onclick="showFilterModal()"> <i
+                                        class="bi bi-sliders"></i> </button>
+                            </div>
+                            <div class="mt-3">
+                                <div class="input-group"><span
+                                        class="input-group-text bg-white border-end-0 rounded-start-3"> <i
+                                            class="bi bi-geo-alt-fill text-success"></i> </span> <input type="text"
+                                        class="form-control border-start-0 rounded-end-3" id="dropLocation"
+                                        placeholder="Enter destination">
+                                </div>
+                            </div>
+                        </div><!-- Recent History -->
+                        <div class="mb-4">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Recent Trips</h6>
+                            <div id="recentTripsContainer">
+                                <div class="history-item d-flex align-items-center">
+                                    <div class="me-3"><i class="bi bi-geo-alt fs-4 text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <p class="mb-0 fw-500">IUB Campus</p><small class="text-muted">Bashundhara
+                                            R/A</small>
+                                    </div><i class="bi bi-chevron-right text-muted"></i>
+                                </div>
+                                <div class="history-item d-flex align-items-center">
+                                    <div class="me-3"><i class="bi bi-geo-alt fs-4 text-primary"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <p class="mb-0 fw-500">Jamuna Future Park</p><small
+                                            class="text-muted">Kuril</small>
+                                    </div><i class="bi bi-chevron-right text-muted"></i>
+                                </div>
+                            </div>
+                        </div><!-- Ride Options -->
+                        <h6 class="fw-bold mb-3"><i class="bi bi-car-front me-2"></i>Choose Ride Type</h6>
+                        <div class="row g-3">
+                            <div class="col-4">
+                                <div class="ride-option text-center" onclick="selectRideType('car', this)">
+                                    <div class="ride-icon mx-auto mb-2"><i class="bi bi-car-front"></i>
+                                    </div>
+                                    <p class="mb-1 fw-500">Car</p><small class="text-muted">৳150+</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="ride-option text-center" onclick="selectRideType('bike', this)">
+                                    <div class="ride-icon mx-auto mb-2"
+                                        style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+                                        <i class="bi bi-bicycle"></i>
+                                    </div>
+                                    <p class="mb-1 fw-500">Bike</p><small class="text-muted">৳50+</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="ride-option text-center" onclick="selectRideType('cng', this)">
+                                    <div class="ride-icon mx-auto mb-2"
+                                        style="background: linear-gradient(135deg, #f9ab00 0%, #fbbc05 100%);"><i
+                                            class="bi bi-truck"></i>
+                                    </div>
+                                    <p class="mb-1 fw-500">CNG</p><small class="text-muted">৳80+</small>
+                                </div>
+                            </div>
+                        </div><button class="btn btn-primary-custom w-100 mt-4" onclick="goToRidePage()"> <i
+                                class="bi bi-search me-2"></i>Find Rides </button>
+                    </div>
+                </div>
+            </div><!-- Bottom Navigation -->
+            <nav class="bottom-nav d-flex" id="bottomNav">
+                <div class="nav-item active" data-tab="home" onclick="switchNavTab('home')"><i
+                        class="bi bi-house-door"></i>
+                    <p class="mb-0 small">Home</p>
+                </div>
+                <div class="nav-item" data-tab="activity" onclick="switchNavTab('activity')"><i
+                        class="bi bi-activity"></i>
+                    <p class="mb-0 small">Activity</p>
+                </div>
+                <div class="nav-item" data-tab="history" onclick="switchNavTab('history')"><i
+                        class="bi bi-clock-history"></i>
+                    <p class="mb-0 small">History</p>
+                </div>
+                <div class="nav-item" data-tab="account" onclick="switchNavTab('account')"><i class="bi bi-person"></i>
+                    <p class="mb-0 small">Account</p>
+                </div>
+            </nav>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

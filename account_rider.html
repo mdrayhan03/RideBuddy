@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account - IUB Ride Share</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="/_sdk/element_sdk.js"></script>
+</head>
+
+<body>
+    <div class="app-container" id="app">
+        <div class="toast-container" id="toastContainer"></div>
+        <div id="mainApp">
+            <div class="main-content" id="mainContent">
+                <div class="page active" id="riderAccountPage">
+                    <div class="p-4 fade-in">
+                        <h4 class="fw-bold mb-4"><i class="bi bi-person-circle me-2"></i>Account</h4>
+                        <!-- Profile Card -->
+                        <div class="card-custom p-4 mb-4 text-center">
+                            <div class="avatar avatar-lg mx-auto mb-3"
+                                style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);"
+                                id="riderProfileAvatar">R</div>
+                            <h5 class="fw-bold mb-1" id="riderProfileName">Rider Name</h5>
+                            <p class="text-muted mb-2" id="riderProfileLicence">License: ABC-1234</p>
+                            <div class="rating-stars"><i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i
+                                    class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i
+                                    class="bi bi-star"></i> <span class="ms-1">4.0</span>
+                            </div>
+                        </div><!-- Today's Earnings -->
+                        <div class="wallet-card mb-4">
+                            <p class="small opacity-75 mb-1">Today's Earnings</p>
+                            <h3 class="fw-bold mb-0">৳1,250</h3>
+                            <p class="small mb-0 mt-2">8 rides completed</p>
+                        </div><!-- Menu Items -->
+                        <div class="card-custom overflow-hidden">
+                            <div class="p-3 border-bottom d-flex align-items-center" onclick="showWalletPage()">
+                                <div class="me-3"><i class="bi bi-wallet2 fs-4 text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 fw-500">Wallet</p><small class="text-muted">Total Balance:
+                                        ৳5,500</small>
+                                </div><i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                            <div class="p-3 border-bottom d-flex align-items-center" onclick="showSettingsPage()">
+                                <div class="me-3"><i class="bi bi-gear fs-4 text-secondary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 fw-500">Settings</p><small class="text-muted">Vehicle &amp;
+                                        preferences</small>
+                                </div><i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                            <div class="p-3 border-bottom d-flex align-items-center" onclick="showAboutPage()">
+                                <div class="me-3"><i class="bi bi-info-circle fs-4 text-info"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 fw-500">About Us</p><small class="text-muted">Learn more about IUB
+                                        Ride</small>
+                                </div><i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                            <div class="p-3 d-flex align-items-center" onclick="handleLogout()">
+                                <div class="me-3"><i class="bi bi-box-arrow-right fs-4 text-danger"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 fw-500 text-danger">Logout</p><small class="text-muted">Sign out of
+                                        your account</small>
+                                </div><i class="bi bi-chevron-right text-muted"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div><!-- Bottom Navigation -->
+            <nav class="bottom-nav d-flex" id="bottomNav">
+                <div class="nav-item" data-tab="home" onclick="switchNavTab('home')"><i class="bi bi-house-door"></i>
+                    <p class="mb-0 small">Home</p>
+                </div>
+                <div class="nav-item" data-tab="activity" onclick="switchNavTab('activity')"><i
+                        class="bi bi-activity"></i>
+                    <p class="mb-0 small">Activity</p>
+                </div>
+                <div class="nav-item" data-tab="history" onclick="switchNavTab('history')"><i
+                        class="bi bi-clock-history"></i>
+                    <p class="mb-0 small">History</p>
+                </div>
+                <div class="nav-item active" data-tab="account" onclick="switchNavTab('account')"><i
+                        class="bi bi-person"></i>
+                    <p class="mb-0 small">Account</p>
+                </div>
+            </nav>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

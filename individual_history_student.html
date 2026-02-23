@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trip Details - IUB Ride Share</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="/_sdk/element_sdk.js"></script>
+</head>
+
+<body>
+    <div class="app-container" id="app">
+        <div class="toast-container" id="toastContainer"></div>
+        <div id="mainApp">
+            <div class="main-content" id="mainContent">
+                <div class="page active" id="studentIndividualHistoryPage">
+                    <div class="p-4 fade-in">
+                        <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3"
+                                onclick="navigateTo('history_student')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+                            <h5 class="mb-0 fw-bold">Trip Details</h5>
+                        </div><!-- Map -->
+                        <div class="map-container mb-4" style="height: 180px;">
+                            <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+                            </div>
+                        </div><!-- Trip Info -->
+                        <div class="card-custom p-4 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-3"><span
+                                    class="status-badge status-completed">Completed</span> <span
+                                    class="fw-bold fs-5 text-primary">৳120</span>
+                            </div>
+                            <div class="mb-3">
+                                <div class="d-flex align-items-start mb-2"><i
+                                        class="bi bi-geo-alt text-danger me-2 mt-1"></i>
+                                    <div><small class="text-muted">Pickup</small>
+                                        <p class="mb-0 fw-500">IUB Campus, Bashundhara</p>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-start"><i
+                                        class="bi bi-geo-alt-fill text-success me-2 mt-1"></i>
+                                    <div><small class="text-muted">Drop-off</small>
+                                        <p class="mb-0 fw-500">Bashundhara R/A, Block A</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <div class="row text-center">
+                                <div class="col-4"><i class="bi bi-clock fs-4 text-primary"></i>
+                                    <p class="mb-0 small fw-500">25 min</p><small class="text-muted">Duration</small>
+                                </div>
+                                <div class="col-4"><i class="bi bi-signpost-split fs-4 text-success"></i>
+                                    <p class="mb-0 small fw-500">5.2 km</p><small class="text-muted">Distance</small>
+                                </div>
+                                <div class="col-4"><i class="bi bi-calendar fs-4 text-warning"></i>
+                                    <p class="mb-0 small fw-500">Dec 15</p><small class="text-muted">Date</small>
+                                </div>
+                            </div>
+                        </div><!-- Rider Info -->
+                        <div class="card-custom p-4 mb-3">
+                            <h6 class="fw-bold mb-3">Rider</h6>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-3"
+                                    style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+                                    R</div>
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 fw-500">Rahim Ahmed</p>
+                                    <div class="rating-stars small"><i class="bi bi-star-fill"></i> <i
+                                            class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i
+                                            class="bi bi-star-fill"></i> <i class="bi bi-star-half"></i> <span
+                                            class="ms-1">4.5</span>
+                                    </div>
+                                </div><span class="text-muted small">Honda CBR</span>
+                            </div>
+                        </div><button class="btn btn-primary-custom w-100" onclick="showRatingPage('student')"> <i
+                                class="bi bi-star me-2"></i>Rate this Trip </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>

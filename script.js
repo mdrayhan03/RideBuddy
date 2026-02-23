@@ -1,0 +1,618 @@
+// App State
+let appState = {
+    isLoggedIn: false,
+    userType: null, // 'student' or 'rider'
+    currentUser: null,
+    loginType: 'student',
+    accountType: 'student',
+    selectedRideType: null,
+    currentRating: 0,
+    ratingContext: null,
+    users: []
+};
+
+const defaultConfig = {
+    app_title: 'IUB Ride Share'
+};
+
+let config = { ...defaultConfig };
+
+// Load state from localStorage
+function loadState() {
+    const savedState = localStorage.getItem('rideBuddyState');
+    if (savedState) {
+        appState = JSON.parse(savedState);
+    }
+}
+
+// Save state to localStorage
+function saveState() {
+    localStorage.setItem('rideBuddyState', JSON.stringify(appState));
+}
+
+// Initialize Element SDK
+if (window.elementSdk) {
+    window.elementSdk.init({
+        defaultConfig,
+        onConfigChange: async (newConfig) => {
+            config = { ...defaultConfig, ...newConfig };
+            document.title = config.app_title;
+        },
+        mapToCapabilities: (cfg) => ({
+            recolorables: [],
+            borderables: [],
+            fontEditable: undefined,
+            fontSizeable: undefined
+        }),
+        mapToEditPanelValues: (cfg) => new Map([
+            ['app_title', cfg.app_title || defaultConfig.app_title]
+        ])
+    });
+}
+
+// Initialize Data SDK
+const dataHandler = {
+    onDataChanged(data) {
+        appState.users = data;
+        saveState();
+    }
+};
+
+async function initDataSdk() {
+    if (window.dataSdk) {
+        const result = await window.dataSdk.init(dataHandler);
+        if (!result.isOk) {
+            console.error('Failed to initialize Data SDK');
+        }
+    }
+}
+
+initDataSdk();
+loadState();
+
+// Toast notification
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    
+    const toast = document.createElement('div');
+    toast.className = 'custom-toast';
+    
+    const iconMap = {
+        success: 'bi-check-circle-fill text-success',
+        error: 'bi-x-circle-fill text-danger',
+        warning: 'bi-exclamation-circle-fill text-warning',
+        info: 'bi-info-circle-fill text-primary'
+    };
+    
+    toast.innerHTML = `
+        <i class="bi ${iconMap[type]} fs-4"></i>
+        <span>${message}</span>
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideIn 0.3s ease reverse';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+// Page Navigation
+function navigateTo(page) {
+    saveState();
+    window.location.href = page + '.html';
+}
+
+function showPage(pageId) {
+    // For compatibility with existing calls in HTML
+    if (pageId === 'loginPage') navigateTo('login');
+    else if (pageId === 'createAccountPage') navigateTo('signup');
+    else if (pageId === 'welcomePage') navigateTo('index');
+    else {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const el = document.getElementById(pageId);
+        if (el) el.classList.add('active');
+    }
+}
+
+// Login type selection
+function selectLoginType(type, element) {
+    appState.loginType = type;
+    document.querySelectorAll('.user-type-btn').forEach(btn => btn.classList.remove('active'));
+    element.classList.add('active');
+    
+    if (type === 'student') {
+        document.getElementById('studentLoginField').classList.remove('d-none');
+        document.getElementById('riderLoginField').classList.add('d-none');
+    } else {
+        document.getElementById('studentLoginField').classList.add('d-none');
+        document.getElementById('riderLoginField').classList.remove('d-none');
+    }
+    saveState();
+}
+
+// Account type selection
+function selectAccountType(type, element) {
+    appState.accountType = type;
+    document.querySelectorAll('.user-type-btn').forEach(btn => btn.classList.remove('active'));
+    element.classList.add('active');
+    
+    if (type === 'student') {
+        document.getElementById('studentFields').classList.remove('d-none');
+        document.getElementById('riderFields').classList.add('d-none');
+    } else {
+        document.getElementById('studentFields').classList.add('d-none');
+        document.getElementById('riderFields').classList.remove('d-none');
+    }
+    saveState();
+}
+
+// Handle image upload
+function handleImageUpload(input) {
+    if (input.files && input.files[0]) {
+        const icon = document.getElementById('imageIcon');
+        if (icon) icon.className = 'bi bi-check-circle fs-2 text-success';
+    }
+}
+
+// Handle Login
+async function handleLogin(event) {
+    event.preventDefault();
+    
+    let identifier;
+    if (appState.loginType === 'student') {
+        identifier = document.getElementById('loginIubId').value.trim();
+        if (!identifier) {
+            showToast('Please enter your IUB ID', 'error');
+            return;
+        }
+    } else {
+        identifier = document.getElementById('loginLicenceNo').value.trim();
+        if (!identifier) {
+            showToast('Please enter your license number', 'error');
+            return;
+        }
+    }
+    
+    // Find user in data
+    const user = appState.users.find(u => 
+        (appState.loginType === 'student' && u.iub_id === identifier) ||
+        (appState.loginType === 'rider' && u.licence_no === identifier)
+    );
+    
+    if (user) {
+        appState.isLoggedIn = true;
+        appState.userType = user.type;
+        appState.currentUser = user;
+        saveState();
+        showMainApp();
+        showToast('Welcome back, ' + user.name + '!', 'success');
+    } else {
+        // Demo login for testing
+        appState.isLoggedIn = true;
+        appState.userType = appState.loginType;
+        appState.currentUser = {
+            type: appState.loginType,
+            name: appState.loginType === 'student' ? 'Demo Student' : 'Demo Rider',
+            iub_id: appState.loginType === 'student' ? identifier : '',
+            licence_no: appState.loginType === 'rider' ? identifier : '',
+            rating: 4.5,
+            wallet: 500
+        };
+        saveState();
+        showMainApp();
+        showToast('Logged in as demo user', 'info');
+    }
+}
+
+// Handle Create Account
+async function handleCreateAccount(event) {
+    event.preventDefault();
+    
+    const btn = document.getElementById('createAccountBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+    
+    let userData = {
+        type: appState.accountType,
+        created_at: new Date().toISOString(),
+        rating: 5.0,
+        wallet: 0
+    };
+    
+    if (appState.accountType === 'student') {
+        const iubId = document.getElementById('regIubId').value.trim();
+        const name = document.getElementById('regStudentName').value.trim();
+        const gender = document.getElementById('regStudentGender').value;
+        const phone = document.getElementById('regStudentPhone').value.trim();
+        const email = document.getElementById('regStudentEmail').value.trim();
+        const emergency = document.getElementById('regStudentEmergency').value.trim();
+        const address = document.getElementById('regStudentAddress').value.trim();
+        
+        if (!iubId || !name || !gender || !phone || !email || !emergency || !address) {
+            showToast('Please fill in all required fields', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+            return;
+        }
+        
+        userData = {
+            ...userData,
+            iub_id: iubId,
+            name: name,
+            gender: gender,
+            phone: phone,
+            email: email,
+            emergency_contact: emergency,
+            home_address: address,
+            licence_no: '',
+            image: ''
+        };
+    } else {
+        const licenceNo = document.getElementById('regLicenceNo').value.trim();
+        const name = document.getElementById('regRiderName').value.trim();
+        const gender = document.getElementById('regRiderGender').value;
+        const phone = document.getElementById('regRiderPhone').value.trim();
+        const email = document.getElementById('regRiderEmail').value.trim();
+        const emergency = document.getElementById('regRiderEmergency').value.trim();
+        
+        if (!licenceNo || !name || !gender || !phone || !email || !emergency) {
+            showToast('Please fill in all required fields', 'error');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+            return;
+        }
+        
+        userData = {
+            ...userData,
+            licence_no: licenceNo,
+            name: name,
+            gender: gender,
+            phone: phone,
+            email: email,
+            emergency_contact: emergency,
+            iub_id: '',
+            home_address: '',
+            image: ''
+        };
+    }
+    
+    if (window.dataSdk) {
+        const result = await window.dataSdk.create(userData);
+        if (result.isOk) {
+            showToast('Account created successfully!', 'success');
+            appState.isLoggedIn = true;
+            appState.userType = userData.type;
+            appState.currentUser = userData;
+            saveState();
+            showMainApp();
+        } else {
+            showToast('Failed to create account. Please try again.', 'error');
+        }
+    } else {
+        // Demo mode
+        appState.isLoggedIn = true;
+        appState.userType = userData.type;
+        appState.currentUser = userData;
+        saveState();
+        showMainApp();
+        showToast('Account created (demo mode)', 'success');
+    }
+    
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+}
+
+// Show Main App
+function showMainApp() {
+    if (appState.userType === 'student') {
+        navigateTo('home_student');
+    } else {
+        navigateTo('home_rider');
+    }
+}
+
+// Update profile displays
+function updateProfileDisplays() {
+    if (appState.currentUser) {
+        const initial = appState.currentUser.name ? appState.currentUser.name.charAt(0).toUpperCase() : 'U';
+        
+        if (appState.userType === 'student') {
+            const nameDisp = document.getElementById('studentNameDisplay');
+            if (nameDisp) nameDisp.textContent = appState.currentUser.name || 'Student';
+            
+            const avatarSmall = document.getElementById('studentAvatarSmall');
+            if (avatarSmall) avatarSmall.textContent = initial;
+            
+            const profAvatar = document.getElementById('studentProfileAvatar');
+            if (profAvatar) profAvatar.textContent = initial;
+            
+            const profName = document.getElementById('studentProfileName');
+            if (profName) profName.textContent = appState.currentUser.name || 'Student Name';
+            
+            const profId = document.getElementById('studentProfileId');
+            if (profId) profId.textContent = 'IUB ID: ' + (appState.currentUser.iub_id || 'N/A');
+        } else {
+            const nameDisp = document.getElementById('riderNameDisplay');
+            if (nameDisp) nameDisp.textContent = appState.currentUser.name || 'Rider';
+            
+            const avatarSmall = document.getElementById('riderAvatarSmall');
+            if (avatarSmall) avatarSmall.textContent = initial;
+            
+            const profAvatar = document.getElementById('riderProfileAvatar');
+            if (profAvatar) profAvatar.textContent = initial;
+            
+            const profName = document.getElementById('riderProfileName');
+            if (profName) profName.textContent = appState.currentUser.name || 'Rider Name';
+            
+            const profLic = document.getElementById('riderProfileLicence');
+            if (profLic) profLic.textContent = 'License: ' + (appState.currentUser.licence_no || 'N/A');
+        }
+    }
+}
+
+// Switch Nav Tab
+function switchNavTab(tab) {
+    if (tab === 'home') navigateTo(appState.userType === 'student' ? 'home_student' : 'home_rider');
+    else if (tab === 'activity') navigateTo(appState.userType === 'student' ? 'activity_student' : 'activity_rider');
+    else if (tab === 'history') navigateTo(appState.userType === 'student' ? 'history_student' : 'history_rider');
+    else if (tab === 'account') navigateTo(appState.userType === 'student' ? 'account_student' : 'account_rider');
+}
+
+// Show Student Page
+function showStudentPage(page) {
+    const pageMap = {
+        'home': 'home_student',
+        'ride': 'ride_student',
+        'confirmRide': 'confirm_ride_student',
+        'shareRide': 'share_ride_student',
+        'availableRide': 'available_ride_student',
+        'activity': 'activity_student',
+        'history': 'history_student',
+        'individualHistory': 'individual_history_student',
+        'account': 'account_student'
+    };
+    if (pageMap[page]) navigateTo(pageMap[page]);
+}
+
+// Show Rider Page
+function showRiderPage(page) {
+    const pageMap = {
+        'home': 'home_rider',
+        'rideStart': 'ride_start_rider',
+        'activity': 'activity_rider',
+        'history': 'history_rider',
+        'individualHistory': 'individual_history_rider',
+        'account': 'account_rider'
+    };
+    if (pageMap[page]) navigateTo(pageMap[page]);
+}
+
+// Select Ride Type
+function selectRideType(type, element) {
+    appState.selectedRideType = type;
+    document.querySelectorAll('.ride-option').forEach(opt => opt.classList.remove('selected'));
+    element.classList.add('selected');
+    saveState();
+}
+
+// Go to Ride Page
+function goToRidePage() {
+    const pickup = document.getElementById('pickupLocation').value.trim();
+    const drop = document.getElementById('dropLocation').value.trim();
+    
+    if (!pickup || !drop) {
+        showToast('Please enter pickup and drop locations', 'warning');
+        return;
+    }
+    
+    navigateTo('ride_student');
+}
+
+// Search Individual Ride
+function searchIndividualRide() {
+    showToast('Searching for individual rides...', 'info');
+    setTimeout(() => {
+        navigateTo('confirm_ride_student');
+    }, 1500);
+}
+
+// Search Share Ride
+function searchShareRide() {
+    navigateTo('share_ride_student');
+}
+
+// Select Share Ride
+function selectShareRide(rideId) {
+    navigateTo('available_ride_student');
+}
+
+// Create New Share Ride
+function createNewShareRide() {
+    showToast('Creating new share ride...', 'info');
+    setTimeout(() => {
+        showToast('Share ride created! Waiting for passengers.', 'success');
+    }, 1000);
+}
+
+// Confirm Ride
+function confirmRide() {
+    showToast('Ride confirmed! Your rider is on the way.', 'success');
+    appState.rideStatus = 'active';
+    saveState();
+    setTimeout(() => {
+        navigateTo('activity_student');
+    }, 500);
+}
+
+// Confirm Share Ride
+function confirmShareRide() {
+    showToast('You have joined the share ride!', 'success');
+    appState.rideStatus = 'active';
+    saveState();
+    setTimeout(() => {
+        navigateTo('activity_student');
+    }, 500);
+}
+
+// Look for More Riders
+function lookForMoreRiders() {
+    showToast('Searching for more options...', 'info');
+    setTimeout(() => {
+        navigateTo('confirm_ride_student');
+        showToast('Found another rider!', 'success');
+    }, 3000);
+}
+
+// Emergency Call
+function emergencyCall() {
+    showToast('Contacting emergency services...', 'warning');
+}
+
+// Show Individual History
+function showIndividualHistory(userType, historyId) {
+    if (userType === 'student') {
+        navigateTo('individual_history_student');
+    } else {
+        navigateTo('individual_history_rider');
+    }
+}
+
+// Show Rating Page
+function showRatingPage(context) {
+    appState.ratingContext = context;
+    appState.currentRating = 0;
+    saveState();
+    navigateTo('rating');
+}
+
+// Go Back From Rating
+function goBackFromRating() {
+    navigateTo(appState.userType === 'student' ? 'history_student' : 'history_rider');
+}
+
+// Set Rating
+function setRating(rating) {
+    appState.currentRating = rating;
+    saveState();
+    
+    document.querySelectorAll('#ratingStars i').forEach((star, index) => {
+        if (index < rating) {
+            star.classList.remove('bi-star');
+            star.classList.add('bi-star-fill');
+            star.style.color = '#ffc107';
+        } else {
+            star.classList.remove('bi-star-fill');
+            star.classList.add('bi-star');
+            star.style.color = '#e8eaed';
+        }
+    });
+}
+
+// Submit Rating
+function submitRating() {
+    if (appState.currentRating === 0) {
+        showToast('Please select a rating', 'warning');
+        return;
+    }
+    
+    showToast('Thank you for your feedback!', 'success');
+    setTimeout(() => {
+        navigateTo(appState.userType === 'student' ? 'history_student' : 'history_rider');
+    }, 1000);
+}
+
+// Rider Functions
+function toggleRiderStatus() {
+    const toggle = document.getElementById('riderOnlineToggle');
+    if (toggle.checked) {
+        showToast('You are now online', 'success');
+    } else {
+        showToast('You are now offline', 'info');
+    }
+}
+
+function showRideRequestDetail(requestId) {
+    showToast('Loading ride details...', 'info');
+}
+
+function acceptRide(rideId) {
+    showToast('Ride accepted! Navigate to pickup location.', 'success');
+    appState.riderRideStatus = 'pending';
+    saveState();
+    setTimeout(() => {
+        navigateTo('activity_rider');
+    }, 500);
+}
+
+function startRide() {
+    showToast('Ride started!', 'success');
+    navigateTo('ride_start_rider');
+}
+
+function finishRide() {
+    showToast('Ride completed! Earnings added to wallet.', 'success');
+    appState.riderRideStatus = 'none';
+    saveState();
+    setTimeout(() => {
+        showRatingPage('rider');
+    }, 1000);
+}
+
+// Shared Functions
+function showWalletPage() {
+    navigateTo('wallet');
+}
+
+function showSettingsPage() {
+    navigateTo('settings');
+}
+
+function showAboutPage() {
+    navigateTo('about');
+}
+
+function showFilterModal() {
+    showToast('Filter options coming soon!', 'info');
+}
+
+function handleLogout() {
+    appState.isLoggedIn = false;
+    appState.userType = null;
+    appState.currentUser = null;
+    localStorage.removeItem('rideBuddyState');
+    navigateTo('index');
+}
+
+// Auto-init for specific pages
+document.addEventListener('DOMContentLoaded', () => {
+    updateProfileDisplays();
+    
+    // Set active tab in bottom nav based on page filename
+    const path = window.location.pathname;
+    const page = path.split('/').pop().replace('.html', '');
+    
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        const tab = item.getAttribute('data-tab');
+        if (page.includes(tab)) {
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    // Special logic for activity page states
+    if (page === 'activity_student') {
+        if (appState.rideStatus === 'active') {
+            document.getElementById('activeRideState').classList.remove('d-none');
+            document.getElementById('noActivityState').classList.add('d-none');
+        }
+    } else if (page === 'activity_rider') {
+        if (appState.riderRideStatus === 'pending') {
+            document.getElementById('riderActiveRide').classList.remove('d-none');
+            document.getElementById('riderNoActivity').classList.add('d-none');
+        }
+    }
+});
