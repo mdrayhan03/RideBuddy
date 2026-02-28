@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Login - RideBuddy{% endblock %}
+
+{% block content %}
+<div id="authPages">
+    <div class="page active" id="loginPage">
+        <div class="auth-container centered p-4">
+            <div class="auth-card mx-auto" style="max-width: 400px;">
+                <a href="{% url 'accounts:index' %}" class="btn btn-link p-0 mb-3">
+                    <i class="bi bi-arrow-left fs-4"></i>
+                </a>
+                <h3 class="fw-bold mb-4">Login</h3>
+
+                <div class="d-flex gap-3 mb-4">
+                    <div class="user-type-btn flex-fill text-center active" onclick="selectLoginType('student', this)">
+                        <i class="bi bi-mortarboard fs-2 d-block mb-2" style="color: var(--primary-color);"></i>
+                        <span class="fw-500">Member</span>
+                    </div>
+                    <div class="user-type-btn flex-fill text-center" onclick="selectLoginType('rider', this)">
+                        <i class="bi bi-bicycle fs-2 d-block mb-2" style="color: var(--secondary-color);"></i>
+                        <span class="fw-500">Rider</span>
+                    </div>
+                </div>
+
+                <form id="loginForm" onsubmit="handleLogin(event)">
+                    <!-- Dynamic Identity Fields -->
+                    <div class="mb-3" id="studentLoginField">
+                        <label class="form-label fw-500">Member ID</label>
+                        <input type="text" class="form-control input-custom" id="loginIubId"
+                            placeholder="Enter Member ID">
+                    </div>
+                    <div class="mb-3 d-none" id="riderLoginField">
+                        <label class="form-label fw-500">License Number</label>
+                        <input type="text" class="form-control input-custom" id="loginLicenceNo"
+                            placeholder="Enter license number">
+                    </div>
+
+                    <!-- Shared Password Field -->
+                    <div class="mb-3">
+                        <label class="form-label fw-500">Password</label>
+                        <div class="position-relative">
+                            <input type="password" class="form-control input-custom" id="loginPassword"
+                                placeholder="••••••••">
+                            <i class="bi bi-eye-slash position-absolute top-50 end-0 translate-middle-y me-3 text-muted cursor-pointer"
+                                onclick="togglePassword('loginPassword', this)"></i>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary-custom w-100 btn-lg mt-3">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                    </button>
+                </form>
+
+                <div class="text-center mt-4 pt-3 border-top">
+                    <p class="text-muted small mb-3">Don't have an account?</p>
+                    <a href="{% url 'accounts:signup' %}" class="btn btn-outline-primary btn-sm rounded-pill px-4">
+                        <i class="bi bi-person-plus me-1"></i>Create Account
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

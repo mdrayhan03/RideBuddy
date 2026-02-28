@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}About - IUB Ride Share{% endblock %}
+
+{% block content %}
+<div id="additionalPages">
+    <div class="page active" id="aboutPage">
+        <div class="p-4 fade-in">
+            <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3"
+                    onclick="window.history.back()"> <i class="bi bi-arrow-left fs-4"></i> </button>
+                <h4 class="fw-bold mb-0">About</h4>
+            </div>
+            <div class="text-center mb-5"><i class="bi bi-car-front-fill"
+                    style="font-size: 5rem; color: var(--primary-color);"></i>
+                <h2 class="fw-bold mt-3">RideBuddy</h2>
+                <p class="text-muted">Version 1.0.0</p>
+            </div>
+            <div class="card-custom p-4 mb-4">
+                <h6 class="fw-bold mb-3">Our Mission</h6>
+                <p class="text-muted small">Providing a safe, reliable, and efficient ride-sharing platform for
+                    the students and riders of Independent University, Bangladesh. Our goal is to make campus
+                    transportation easier for everyone.</p>
+            </div>
+            <div class="card-custom p-4 mb-4">
+                <h6 class="fw-bold mb-3">Key Features</h6>
+                <ul class="list-unstyled small text-muted">
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Real-time ride tracking
+                    </li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Secure campus-only
+                        community</li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Fair pricing system
+                    </li>
+                    <li class="mb-2"><i class="bi bi-check2-circle text-success me-2"></i>Easy wallet management
+                    </li>
+                </ul>
+            </div>
+            <div class="card-custom p-4">
+                <h6 class="fw-bold mb-3">Contact Us</h6>
+                <p class="small text-muted mb-2"><i class="bi bi-envelope me-2"></i>support@ridebuddy.edu</p>
+                <p class="small text-muted mb-0"><i class="bi bi-telephone me-2"></i>+880 1234-567890</p>
+            </div>
+            <p class="text-center text-muted small mt-5">© 2024 RideBuddy. All rights reserved.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

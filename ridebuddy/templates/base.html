@@ -1,0 +1,127 @@
+{% load static %}
+<!doctype html>
+<html lang="en" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RideBuddy{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+
+    <!-- PWA Setup -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1a73e8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="{% static 'assets/media/icon_192.png' %}">
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+    <div class="app-container" id="app">
+        <div class="toast-container" id="toastContainer"></div>
+
+        <!-- Global Filter Modal -->
+        <div class="modal fade" id="filterModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content rounded-4 border-0">
+                    <div class="modal-header border-0 pb-0">
+                        <h6 class="modal-title fw-bold">Gender Preference</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3">Matching with specific gender increases comfort for some users.
+                        </p>
+                        <div class="list-group list-group-flush rounded-3 border">
+                            <label class="list-group-item d-flex align-items-center gap-3 py-3">
+                                <input class="form-check-input flex-shrink-0" type="radio" name="genderPref" value="any"
+                                    checked>
+                                <span><i class="bi bi-gender-ambiguous me-2"></i>Any Gender</span>
+                            </label>
+                            <label class="list-group-item d-flex align-items-center gap-3 py-3">
+                                <input class="form-check-input flex-shrink-0" type="radio" name="genderPref"
+                                    value="male">
+                                <span><i class="bi bi-gender-male me-2"></i>Only Male</span>
+                            </label>
+                            <label class="list-group-item d-flex align-items-center gap-3 py-3">
+                                <input class="form-check-input flex-shrink-0" type="radio" name="genderPref"
+                                    value="female">
+                                <span><i class="bi bi-gender-female me-2"></i>Only Female</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-primary-custom w-100" data-bs-dismiss="modal"
+                            onclick="applyGenderFilter()">Apply Preference</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="{% static 'script.js' %}"></script>
+    <script>
+        // Populate routes from Django URL tag
+        routes = {
+            'index': "{% url 'accounts:index' %}",
+            'login': "{% url 'accounts:login' %}",
+            'signup': "{% url 'accounts:signup' %}",
+            'home_rider': "{% url 'accounts:home_rider' %}",
+            'home_student': "{% url 'accounts:home_student' %}",
+            'account_rider': "{% url 'accounts:account_rider' %}",
+            'account_student': "{% url 'accounts:account_student' %}",
+            'settings': "{% url 'accounts:settings' %}",
+            'wallet': "{% url 'accounts:wallet' %}",
+            'about': "{% url 'accounts:about' %}",
+            'available_ride_student': "{% url 'rides:available_ride_student' %}",
+            'confirm_ride_student': "{% url 'rides:confirm_ride_student' %}",
+            'ride_start_rider': "{% url 'rides:ride_start_rider' %}",
+            'ride_student': "{% url 'rides:ride_student' %}",
+            'share_ride_student': "{% url 'rides:share_ride_student' %}",
+            'activity_rider': "{% url 'bookings:activity_rider' %}",
+            'activity_student': "{% url 'bookings:activity_student' %}",
+            'history_rider': "{% url 'bookings:history_rider' %}",
+            'history_student': "{% url 'bookings:history_student' %}",
+            'individual_history_rider': "{% url 'bookings:individual_history_rider' %}",
+            'individual_history_student': "{% url 'bookings:individual_history_student' %}",
+            'rating': "{% url 'reviews:rating' %}",
+        };
+    </script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register("/service-worker.js")
+                    .then(reg => {
+                        console.log('PWA SW registered!', reg.scope);
+
+                        // Request notification permission if not already granted
+                        if (Notification.permission === 'default') {
+                            setTimeout(() => {
+                                Notification.requestPermission().then(permission => {
+                                    if (permission === 'granted') {
+                                        console.log('Notification permission granted!');
+                                        showToast("Notifications enabled!", "success");
+                                    }
+                                });
+                            }, 3000);
+                        }
+                    })
+                    .catch(err => console.log('SW registration failed:', err));
+            });
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

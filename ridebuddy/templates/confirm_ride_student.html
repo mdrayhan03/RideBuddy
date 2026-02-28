@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirm Ride - IUB Ride Share{% endblock %}
+
+{% block content %}
+<div id="mainApp">
+    <div class="main-content" id="mainContent">
+        <div class="page active" id="studentConfirmRidePage">
+            <div class="p-4 fade-in">
+                <div class="d-flex align-items-center mb-4"><button class="btn btn-link p-0 me-3"
+                        onclick="navigateTo('ride_student')"> <i class="bi bi-arrow-left fs-4"></i> </button>
+                    <h5 class="mb-0 fw-bold">Confirm Your Ride</h5>
+                </div><!-- Map -->
+                <div class="map-container mb-4" style="height: 200px;">
+                    <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+                    </div>
+                </div><!-- Rider Info -->
+                <div class="card-custom p-4 mb-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-person-check me-2"></i>Rider Found!</h6>
+                    <div class="d-flex align-items-center">
+                        <div class="avatar avatar-sm me-3"
+                            style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+                            R
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="mb-0 fw-500">Rahim Ahmed</p>
+                            <div class="rating-stars"><i class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i
+                                    class="bi bi-star-fill"></i> <i class="bi bi-star-fill"></i> <i
+                                    class="bi bi-star-half"></i> <span class="ms-1 text-muted">4.5</span>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <p class="mb-0 fw-bold text-primary">৳120</p><small class="text-muted">Honda
+                                CBR</small>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-around text-center">
+                        <div><i class="bi bi-clock fs-4 text-primary"></i>
+                            <p class="mb-0 small">5 min</p>
+                        </div>
+                        <div><i class="bi bi-signpost-split fs-4 text-success"></i>
+                            <p class="mb-0 small">3.2 km</p>
+                        </div>
+                        <div><i class="bi bi-telephone fs-4 text-warning"></i>
+                            <p class="mb-0 small">Call</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-3"><button class="btn btn-success-custom btn-lg" onclick="confirmRide()">
+                        <i class="bi bi-check-circle me-2"></i>Confirm Ride </button> <button
+                        class="btn btn-secondary-custom" onclick="lookForMoreRiders()"> <i
+                            class="bi bi-search me-2"></i>Look for More Options </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

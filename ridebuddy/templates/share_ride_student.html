@@ -1,0 +1,278 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Ride - IUB Ride Share{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+<style>
+    #createRideMap {
+        height: 220px;
+        border-radius: 20px;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+        z-index: 1;
+    }
+
+    .leaflet-routing-container {
+        display: none;
+    }
+
+    .form-group-custom {
+        background: white;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+
+    .toggle-switch-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .ride-type-selector {
+        display: flex;
+        gap: 12px;
+        margin-top: 16px;
+    }
+
+    .type-pill {
+        flex: 1;
+        padding: 12px;
+        border-radius: 12px;
+        border: 2px solid #f1f3f4;
+        text-align: center;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .type-pill.selected {
+        background: #202124;
+        color: white;
+        border-color: #202124;
+    }
+
+    .hidden-options {
+        display: none;
+        animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-5px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="mainApp">
+    <div class="main-content">
+        <div class="page active">
+            <div class="p-4 pb-5 fade-in">
+                <div class="d-flex align-items-center mb-4">
+                    <button class="btn btn-link p-0 me-3" onclick="navigateTo('ride_student')">
+                        <i class="bi bi-arrow-left fs-4"></i>
+                    </button>
+                    <h5 class="mb-0 fw-bold">Create New Share</h5>
+                </div>
+
+                <!-- Location Header -->
+                <div class="card-custom p-3 mb-4 bg-light border-0">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="small text-muted mb-1">Route Summary</div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold text-truncate" id="pText">Pickup</span>
+                                <i class="bi bi-arrow-right text-muted small"></i>
+                                <span class="fw-bold text-truncate" id="dText">Destination</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map -->
+                <div id="createRideMap" class="mb-4"></div>
+
+                <!-- Vehicle Options -->
+                <div class="form-group-custom">
+                    <div class="toggle-switch-container">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-car-front fs-5 text-primary"></i>
+                            <div>
+                                <div class="fw-600">I have a vehicle</div>
+                                <div class="small text-muted">Car or Bike available</div>
+                            </div>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="hasVehicleToggle"
+                                onchange="toggleVehicleOptions()">
+                        </div>
+                    </div>
+
+                    <!-- Options that show only if "I have a vehicle" is ON -->
+                    <div id="vehicleOptions" class="hidden-options pt-3 border-top mt-3">
+                        <div class="small fw-600 mb-2">Drive Mode</div>
+                        <div class="ride-type-selector mb-3">
+                            <div class="type-pill selected" onclick="selectDriveMode('self', this)">
+                                <i class="bi bi-person-fill me-1"></i> Self Drive
+                            </div>
+                            <div class="type-pill" onclick="selectDriveMode('driver', this)">
+                                <i class="bi bi-person-badge-fill me-1"></i> Has Driver
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center bg-light p-3 rounded-4">
+                            <div>
+                                <div class="fw-bold">Available Seats</div>
+                                <div class="small text-muted">Excluding you</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <button class="btn btn-sm btn-white border rounded-circle" onclick="updateSeats(-1)">
+                                    <i class="bi bi-dash"></i>
+                                </button>
+                                <span id="maxSeatsDisplay" class="fw-bold fs-5">1</span>
+                                <button class="btn btn-sm btn-white border rounded-circle" onclick="updateSeats(1)">
+                                    <i class="bi bi-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="form-group-custom">
+                    <div class="fw-600 mb-3">Gender Preference</div>
+                    <div class="ride-type-selector">
+                        <div class="type-pill selected" id="prefAny" onclick="selectGenderPref('any', this)">
+                            <i class="bi bi-gender-ambiguous me-1"></i> Any
+                        </div>
+                        <div class="type-pill" id="prefMale" onclick="selectGenderPref('male', this)">
+                            <i class="bi bi-gender-male me-1"></i> Male
+                        </div>
+                        <div class="type-pill" id="prefFemale" onclick="selectGenderPref('female', this)">
+                            <i class="bi bi-gender-female me-1"></i> Female
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">
+                        <i class="bi bi-info-circle me-1"></i> Setting a preference helps match you with similar
+                        students.
+                    </p>
+                </div>
+
+                <!-- Create Button -->
+                <div class="d-grid mt-2">
+                    <button class="btn btn-primary-custom btn-lg shadow" onclick="createShareRide()">
+                        <i class="bi bi-plus-circle me-2"></i>Create Ride Post
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script>
+    let driveMode = 'self';
+    let availableSeats = 1;
+    let genderPref = 'any';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const pickup = localStorage.getItem('pickupLoc') || "Dhaka";
+        const drop = localStorage.getItem('dropLoc') || "Destination";
+
+        document.getElementById('pText').textContent = pickup.split(',')[0];
+        document.getElementById('dText').textContent = drop.split(',')[0];
+
+        initCreateRideMap();
+    });
+
+    function initCreateRideMap() {
+        const pLat = parseFloat(localStorage.getItem('pickupLat')) || 23.8103;
+        const pLng = parseFloat(localStorage.getItem('pickupLng')) || 90.4125;
+        const dLat = parseFloat(localStorage.getItem('dropLat'));
+        const dLng = parseFloat(localStorage.getItem('dropLng'));
+
+        const map = L.map('createRideMap').setView([pLat, pLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OSM'
+        }).addTo(map);
+
+        if (dLat && dLng) {
+            L.Routing.control({
+                waypoints: [L.latLng(pLat, pLng), L.latLng(dLat, dLng)],
+                routeWhileDragging: false,
+                addWaypoints: false,
+                draggableWaypoints: false,
+                lineOptions: { styles: [{ color: '#202124', weight: 5, opacity: 0.8 }] },
+                createMarker: function (i, wp) {
+                    return L.marker(wp.latLng, {
+                        icon: L.divIcon({
+                            className: 'c-marker',
+                            html: `<i class="bi bi-geo-alt-fill fs-4 text-${i === 0 ? 'danger' : 'success'} shadow"></i>`,
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 20]
+                        })
+                    });
+                }
+            }).addTo(map);
+        }
+    }
+
+    function toggleVehicleOptions() {
+        const hasVehicle = document.getElementById('hasVehicleToggle').checked;
+        const options = document.getElementById('vehicleOptions');
+        options.style.display = hasVehicle ? 'block' : 'none';
+
+        if (hasVehicle) {
+            options.classList.add('animate-slide-up');
+        }
+    }
+
+    function selectDriveMode(mode, element) {
+        driveMode = mode;
+        const parent = element.parentElement;
+        parent.querySelectorAll('.type-pill').forEach(pill => pill.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    function updateSeats(delta) {
+        availableSeats = Math.max(1, Math.min(4, availableSeats + delta));
+        document.getElementById('maxSeatsDisplay').textContent = availableSeats;
+    }
+
+    function selectGenderPref(pref, element) {
+        genderPref = pref;
+        const parent = element.parentElement;
+        parent.querySelectorAll('.type-pill').forEach(pill => pill.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    function createShareRide() {
+        showToast("Publishing ride post...", "info");
+
+        // Save temporary state
+        appState.rideStatus = 'active';
+        appState.isWaiting = true;
+        saveState();
+
+        setTimeout(() => {
+            showToast("Ride posted successfully!", "success");
+            navigateTo('activity_student');
+        }, 1500);
+    }
+</script>
+{% endblock %}

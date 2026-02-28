@@ -1,0 +1,223 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Welcome to RideBuddy{% endblock %}
+
+{% block content %}
+<div id="ultraLanding">
+    <!-- Ultra Hero Section -->
+    <header class="hero-ultra">
+        <div class="container overflow-hidden">
+            <div class="hero-tag animate-fade-in">
+                <i class="bi bi-patch-check-fill me-2"></i> Verified Community App
+            </div>
+
+            <div class="ultra-glass animate-slide-up">
+                <h1 class="display-3 fw-bold text-white mb-3">Your Campus.<br><span class="text-primary-custom"
+                        style="color: #8ab4f8 !important;">Your Community.</span></h1>
+                <p class="lead text-white-50 mb-5" style="max-width: 600px;">Experience the next generation of
+                    community-driven transportation. Secure, social, and built for everyone.</p>
+
+                <!-- PWA Install Banner -->
+                <div id="pwaInstallBanner"
+                    class="p-3 mb-5 rounded-4 bg-white bg-opacity-10 border border-white border-opacity-25 d-none">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-primary text-white p-2 rounded-circle">
+                            <i class="bi bi-phone-vibrate fs-5"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold small text-white">RideBuddy for Desktop</div>
+                            <div class="text-white-50" style="font-size: 0.75rem;">Install for instant matching
+                                notifications</div>
+                        </div>
+                        <button class="btn btn-white btn-sm rounded-pill px-4 fw-bold"
+                            onclick="installApp()">Install</button>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{% url 'accounts:login' %}"
+                        class="btn btn-primary-custom btn-lg px-5 py-3 rounded-4 shadow-lg">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Get Started Now
+                    </a>
+                    <a href="#how-it-works" class="btn btn-outline-light btn-lg px-5 py-3 rounded-4 border-2">
+                        How it Works
+                    </a>
+                </div>
+
+                <div class="mt-5 d-flex gap-4 animate-fade-in" style="animation-delay: 0.4s">
+                    <div class="text-white">
+                        <div class="h4 fw-bold mb-0">100%</div>
+                        <div class="small opacity-50">Verified Members</div>
+                    </div>
+                    <div class="vr bg-white opacity-25"></div>
+                    <div class="text-white">
+                        <div class="h4 fw-bold mb-0">৳0</div>
+                        <div class="small opacity-50">Platform Fees</div>
+                    </div>
+                    <div class="vr bg-white opacity-25"></div>
+                    <div class="text-white">
+                        <div class="h4 fw-bold mb-0">Safe</div>
+                        <div class="small opacity-50">Community Rides</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- How it Works Section -->
+    <section id="how-it-works" class="py-5 bg-white">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <span class="section-label">The Process</span>
+                <h2 class="fw-bold">How it Works</h2>
+                <p class="text-muted">Simple steps to a smarter commute</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-4">
+                    <div class="step-card">
+                        <div class="step-number">01</div>
+                        <h5 class="fw-bold">Set Destination</h5>
+                        <p class="text-muted small">Enter your pickup and drop location. Our AI maps the best route
+                            instantly.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="step-card">
+                        <div class="step-number text-bg-success">02</div>
+                        <h5 class="fw-bold">Find Neighbors</h5>
+                        <p class="text-muted small">We match you with verified members who live in your area or are
+                            heading that way.</p>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="step-card">
+                        <div class="step-number text-bg-info">03</div>
+                        <h5 class="fw-bold">Go Together</h5>
+                        <p class="text-muted small">Share the costs, minimize carbon footprint, and build a safer
+                            community.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section class="py-5 bg-light">
+        <div class="container py-5">
+            <div class="text-center mb-5">
+                <span class="section-label">Behind the Code</span>
+                <h2 class="fw-bold mb-4">Crafted with ❤️ for the Community</h2>
+                <p class="text-muted mb-4">RideBuddy was designed and developed to solve the daily transportation
+                    struggles of our neighbors. It's built on a foundation of security, transparency, and community.</p>
+            </div>
+
+            <div class="row g-4 mb-5">
+                <!-- Dev 1 -->
+                <div class="col-lg-4">
+                    <div class="dev-profile flex-column text-center p-5 border-0 shadow-sm bg-white rounded-5 h-100">
+                        <div class="dev-avatar mb-3">
+                            <img src="{% static 'assets/media/rayhan.jpeg' %}" alt="Rayhan" class="avatar-img">
+                        </div>
+                        <h5 class="fw-bold mb-1">Md. Rayhan Hossain</h5>
+                        <p class="text-muted small mb-4">Lead Architect & Full-Stack</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="#" class="dev-social-pill px-3 py-2"><i class="bi bi-github me-1"></i> GitHub</a>
+                            <a href="#" class="dev-social-pill px-3 py-2"><i class="bi bi-linkedin me-1"></i>
+                                LinkedIn</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Dev 2 -->
+                <div class="col-lg-4">
+                    <div class="dev-profile flex-column text-center p-5 border-0 shadow-sm bg-white rounded-5 h-100">
+                        <div class="dev-avatar mb-3"
+                            style="width: 90px; height: 90px; font-size: 2rem; background: #34a853;">JS</div>
+                        <h5 class="fw-bold mb-1">John Smith</h5>
+                        <p class="text-muted small mb-4">UI/UX & Mobile Specialist</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="#" class="dev-social-pill px-3 py-2"><i class="bi bi-github me-1"></i> GitHub</a>
+                            <a href="#" class="dev-social-pill px-3 py-2"><i class="bi bi-linkedin me-1"></i>
+                                LinkedIn</a>
+                        </div>
+                    </div>
+                </div>
+                <!-- Dev 3 -->
+                <div class="col-lg-4">
+                    <div class="dev-profile flex-column text-center p-5 border-0 shadow-sm bg-white rounded-5 h-100">
+                        <div class="dev-avatar mb-3"
+                            style="width: 90px; height: 90px; font-size: 2rem; background: #ea4335;">AD</div>
+                        <h5 class="fw-bold mb-1">Alex Doe</h5>
+                        <p class="text-muted small mb-4">Backend & DevOps Engineer</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="#" class="dev-social-pill px-3 py-2"><i class="bi bi-github me-1"></i> GitHub</a>
+                            <a href="#" class="dev-social-pill px-3 py-2"><i class="bi bi-linkedin me-1"></i>
+                                LinkedIn</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <div class="p-5 rounded-5 bg-white shadow-sm border-0">
+                        <h5 class="fw-bold mb-4 text-center"><i
+                                class="bi bi-shield-lock-fill text-primary me-2"></i>Core Project Principles</h5>
+                        <div class="row g-4">
+                            <div class="col-md-4 text-center">
+                                <i class="bi bi-eye-slash-fill fs-2 text-primary mb-2 d-block"></i>
+                                <h6 class="fw-bold">Privacy First</h6>
+                                <p class="x-small text-muted mb-0">Location data shared only with match confirmation.
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <i class="bi bi-gender-ambiguous fs-2 text-success mb-2 d-block"></i>
+                                <h6 class="fw-bold">Safe Matching</h6>
+                                <p class="x-small text-muted mb-0">Priority filters for gender and student comfort.</p>
+                            </div>
+                            <div class="col-md-4 text-center">
+                                <i class="bi bi-star-fill fs-2 text-warning mb-2 d-block"></i>
+                                <h6 class="fw-bold">Accountability</h6>
+                                <p class="x-small text-muted mb-0">Peer-rating system to ensure community trust.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ultra Footer -->
+    <footer class="footer-ultra">
+        <div class="container">
+            <div class="row g-4 mb-5">
+                <div class="col-lg-4">
+                    <h4 class="text-white fw-bold mb-3">RideBuddy</h4>
+                    <p class="small text-muted">The ultimate ride-sharing platform for the community. Connecting
+                        neighbors for a safer tomorrow.</p>
+                </div>
+                <div class="col-lg-2 offset-lg-2">
+                    <h6 class="text-white fw-bold mb-3">Platform</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Home</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Privacy</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none">TOS</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-2">
+                    <h6 class="text-white fw-bold mb-3">Support</h6>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Help Center</a></li>
+                        <li class="mb-2"><a href="#" class="text-muted text-decoration-none">Report Issue</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-4 border-top border-secondary text-center">
+                <p class="mb-0 x-small">Designed & Developed by <strong>Md. Rayhan Hossain</strong> &copy; 2026. All
+                    rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</div>
+{% endblock %}

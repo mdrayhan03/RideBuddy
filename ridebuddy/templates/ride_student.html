@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+<style>
+    #rideMap {
+        height: 280px;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        z-index: 1;
+    }
+
+    .leaflet-routing-container {
+        display: none;
+    }
+
+    .ride-type-selector {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .type-pill {
+        flex: 1;
+        padding: 10px;
+        border-radius: 12px;
+        border: 2px solid #f1f3f4;
+        text-align: center;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.85rem;
+    }
+
+    .type-pill.selected {
+        background: #202124;
+        color: white;
+        border-color: #202124;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="mainApp">
+    <div class="main-content" id="mainContent">
+        <div class="page active" id="studentRidePage">
+            <div class="p-4 pb-5 fade-in">
+                <div class="d-flex align-items-center mb-4">
+                    <button class="btn btn-link p-0 me-3" onclick="navigateTo('home_student')">
+                        <i class="bi bi-arrow-left fs-4"></i>
+                    </button>
+                    <h5 class="mb-0 fw-bold">Live Ride Search</h5>
+                </div>
+                <!-- Location Info -->
+                <div class="card-custom p-3 mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="flex-shrink-0">
+                            <div class="d-flex flex-column align-items-center gap-1">
+                                <i class="bi bi-circle-fill text-danger small"></i>
+                                <div style="width: 2px; height: 20px; background: #eee;"></div>
+                                <i class="bi bi-geo-alt-fill text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 overflow-hidden">
+                            <div class="fw-bold text-truncate" id="pickupText">Current Location</div>
+                            <div class="text-muted small text-truncate" id="dropText">Searching for destination...</div>
+                        </div>
+                        <button class="btn btn-light btn-sm rounded-circle" onclick="navigateTo('home_student')">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                    </div>
+                </div>
+                <!-- Interactive Map -->
+                <div id="rideMap" class="mb-4"></div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="animate-slide-up">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>Available Share Rides</h6>
+                    </div>
+
+                    <!-- Gender Filter Pills -->
+                    <div class="ride-type-selector">
+                        <div class="type-pill selected" onclick="selectFilter('any', this)">Any</div>
+                        <div class="type-pill" onclick="selectFilter('male', this)"><i
+                                class="bi bi-gender-male me-1"></i>Male</div>
+                        <div class="type-pill" onclick="selectFilter('female', this)"><i
+                                class="bi bi-gender-female me-1"></i>Female</div>
+                    </div>
+
+                    <div id="availableShareRides" class="mb-4">
+                        <!-- Loaded dynamically from "backend" -->
+                        <div class="p-4 text-center text-muted"> <span
+                                class="spinner-border spinner-border-sm me-2"></span>Loading rides... </div>
+                    </div>
+
+                    <div class="d-grid gap-3">
+                        <button class="btn btn-outline-dark btn-lg border-2 fw-600 shadow-sm"
+                            onclick="createNewShareRide()">
+                            <i class="bi bi-plus-circle me-2"></i>Create New Ride
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script>
+    let map;
+    let routingControl;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Load data from appState (which is auto-loaded by script.js)
+        const pickup = document.getElementById('pickupLocation')?.value || localStorage.getItem('pickupLoc') || "Current Location";
+        const drop = document.getElementById('dropLocation')?.value || localStorage.getItem('dropLoc') || "Destination";
+
+        document.getElementById('pickupText').textContent = pickup;
+        document.getElementById('dropText').textContent = drop;
+
+        initRideMap();
+        startRiderSearch(); // Load rides automatically
+    });
+
+    function initRideMap() {
+        // Load coordinates from localStorage saved on home page
+        const pLat = parseFloat(localStorage.getItem('pickupLat')) || (appState.currentLocation ? appState.currentLocation.lat : 23.8103);
+        const pLng = parseFloat(localStorage.getItem('pickupLng')) || (appState.currentLocation ? appState.currentLocation.lng : 90.4125);
+        const dLat = parseFloat(localStorage.getItem('dropLat'));
+        const dLng = parseFloat(localStorage.getItem('dropLng'));
+
+        map = L.map('rideMap').setView([pLat, pLng], 14);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        if (!dLat || !dLng) {
+            // No destination found, just show current location
+            L.marker([pLat, pLng]).addTo(map)
+                .bindPopup('You are here')
+                .openPopup();
+            return;
+        }
+
+        // Show Full Route
+        routingControl = L.Routing.control({
+            waypoints: [
+                L.latLng(pLat, pLng),
+                L.latLng(dLat, dLng)
+            ],
+            routeWhileDragging: false,
+            addWaypoints: false,
+            draggableWaypoints: false,
+            lineOptions: {
+                styles: [{ color: '#202124', weight: 6, opacity: 0.8 }] // Premium black route line
+            },
+            createMarker: function (i, wp) {
+                return L.marker(wp.latLng, {
+                    icon: L.divIcon({
+                        className: 'custom-map-marker',
+                        html: `<i class="bi bi-geo-alt-fill fs-3 text-${i === 0 ? 'danger' : 'success'} -shadow"></i>`,
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30]
+                    })
+                });
+            }
+        }).addTo(map);
+    }
+
+    async function startRiderSearch() {
+        const container = document.getElementById('availableShareRides');
+
+        try {
+            // DEMO SIMULATION
+            setTimeout(() => {
+                const mockRides = [
+                    { id: 101, name: "Karim's Ride", car: "Toyota Allion", seats: 2, price: 60, time: "5 mins", initial: "K", color: "var(--primary-color)" },
+                    { id: 102, name: "Maria's Ride", car: "Honda Grace", seats: 1, price: 75, time: "8 mins", initial: "M", color: "var(--accent-color)" }
+                ];
+                renderAvailableRides(mockRides);
+                showToast("Available rides loaded!", "success");
+            }, 1000);
+
+        } catch (err) {
+            showToast("Server error. Try again.", "error");
+            container.innerHTML = '<div class="p-4 text-center text-danger">Failed to load rides.</div>';
+        }
+    }
+
+    function renderAvailableRides(rides) {
+        const container = document.getElementById('availableShareRides');
+        container.innerHTML = '';
+
+        rides.forEach(ride => {
+            const card = document.createElement('div');
+            card.className = 'available-ride-card animate-fade-in mb-3';
+            card.onclick = () => selectRide(ride.id);
+            card.innerHTML = `
+                <div class="d-flex align-items-center mb-2">
+                    <div class="avatar avatar-sm me-3" style="background: ${ride.color || 'var(--primary-color)'}">${ride.initial}</div>
+                    <div class="flex-grow-1">
+                        <p class="mb-0 fw-600">${ride.name}</p>
+                        <small class="text-muted">${ride.car} • ${ride.seats} seats left</small>
+                    </div>
+                    <span class="badge bg-success-subtle text-success border border-success-subtle rounded-pill">৳${ride.price}/pp</span>
+                </div>
+                <div class="share-ride-info small py-2 px-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-muted"><i class="bi bi-clock me-1"></i>${ride.time} away</span>
+                        <span class="text-primary fw-500">Join Ride <i class="bi bi-arrow-right"></i></span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
+    function selectRide(id) {
+        showToast("Joining ride...", "info");
+        setTimeout(() => {
+            navigateTo('available_ride_student');
+        }, 800);
+    }
+
+    function createNewShareRide() {
+        showToast("Opening Create Ride menu...", "info");
+        setTimeout(() => {
+            navigateTo('share_ride_student');
+        }, 500);
+    }
+
+    function selectFilter(pref, element) {
+        const parent = element.parentElement;
+        parent.querySelectorAll('.type-pill').forEach(pill => pill.classList.remove('selected'));
+        element.classList.add('selected');
+
+        startRiderSearch();
+        showToast(`Filtering for ${pref} rides...`, 'info');
+    }
+</script>
+{% endblock %}

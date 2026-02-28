@@ -1,0 +1,713 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Create Account - RideBuddy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .camera-container {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        aspect-ratio: 4/3;
+        background: #000;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 0 auto;
+    }
+
+    #cameraVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .camera-overlay {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .image-upload {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 2px dashed #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #f9fafb;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .image-upload:hover {
+        border-color: var(--primary-color);
+        background: #eff6ff;
+    }
+
+    .image-upload.card-upload {
+        width: 100%;
+        max-width: 280px;
+        height: 160px;
+        border-radius: 16px;
+    }
+
+    .captured-preview {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+    }
+
+    .form-step {
+        display: none;
+    }
+
+    .form-step.active {
+        display: block;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    .camera-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: white;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .camera-btn:hover {
+        transform: scale(1.1);
+        background: #f0f0f0;
+    }
+
+    .switch-custom {
+        width: 50px;
+        height: 25px;
+    }
+
+    .btn-outline-primary-custom {
+        border-radius: 12px;
+        padding: 10px 20px;
+        font-weight: 500;
+        color: var(--primary-color);
+        border: 2px solid var(--primary-color);
+        background: transparent;
+        transition: all 0.3s;
+    }
+
+    .btn-outline-primary-custom:hover {
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.4s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="authPages">
+    <div class="page active" id="createAccountPage">
+        <div class="auth-container p-4">
+            <div class="auth-card mx-auto my-4" style="max-width: 650px;">
+                <a href="{% url 'accounts:index' %}" class="btn btn-link p-0 mb-3 text-decoration-none text-dark">
+                    <i class="bi bi-arrow-left fs-4"></i>
+                </a>
+
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold">Create Student Account</h3>
+                    <p class="text-muted">Safe & Secure Campus Ride Sharing</p>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress mb-4" style="height: 6px; border-radius: 10px;">
+                    <div id="regProgress" class="progress-bar bg-primary" role="progressbar"
+                        style="width: 50%; transition: width 0.4s ease;"></div>
+                </div>
+
+                <form id="unifiedSignupForm" onsubmit="handleUnifiedSignup(event)">
+                    <!-- Step 1: Basic Student Info -->
+                    <div class="form-step active" id="step1">
+                        <div class="form-section">
+                            <div class="form-section-title"><i class="bi bi-person-lines-fill me-2"></i>Personal
+                                Information</div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">First Name <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control input-custom" id="regFirstName"
+                                        placeholder="e.g., John" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Last Name <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control input-custom" id="regLastName"
+                                        placeholder="e.g., Doe" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Member ID <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control input-custom" id="regIubId"
+                                        placeholder="Enter Member ID" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Alternative Email <span
+                                            class="text-danger">*</span></label>
+                                    <input type="email" class="form-control input-custom" id="regAltEmail"
+                                        placeholder="personal@email.com" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Emergency Number <span
+                                            class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control input-custom" id="regEmergencyPhone"
+                                        placeholder="01XXXXXXXXX" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Password <span
+                                            class="text-danger">*</span></label>
+                                    <input type="password" class="form-control input-custom" id="regPassword"
+                                        placeholder="••••••••" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section mt-4">
+                            <div class="form-section-title"><i class="bi bi-camera me-2"></i>Real-time Verification
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-6 text-center">
+                                    <p class="small fw-bold mb-3">Profile Picture <span class="text-danger">*</span></p>
+                                    <div class="image-upload mx-auto mb-3" onclick="openCamera('profile')">
+                                        <i class="bi bi-person-video fs-2 text-muted" id="profilePicIcon"></i>
+                                        <img id="profilePicPreview" class="captured-preview">
+                                    </div>
+                                    <input type="hidden" id="profilePicData">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                        onclick="openCamera('profile')">Capture Photo</button>
+                                </div>
+                                <div class="col-md-6 text-center">
+                                    <p class="small fw-bold mb-3">ID Card Picture <span class="text-danger">*</span>
+                                    </p>
+                                    <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('idcard')">
+                                        <i class="bi bi-card-heading fs-2 text-muted" id="idCardIcon"></i>
+                                        <img id="idCardPreview" class="captured-preview">
+                                    </div>
+                                    <input type="hidden" id="idCardData">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                        onclick="openCamera('idcard')">Capture Card</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-4">
+                            <button type="button" class="btn btn-primary-custom px-5" onclick="goToStep(2)">Vehicle Info
+                                <i class="bi bi-chevron-right ms-2"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Car Information -->
+                    <div class="form-step" id="step2">
+                        <div class="form-section">
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <div class="form-section-title mb-0"><i class="bi bi-car-front me-2"></i>Vehicle Options
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input switch-custom" type="checkbox" id="hasCarToggle"
+                                        onchange="toggleCarInfo(this.checked)">
+                                    <label class="form-check-label ms-2 fw-bold text-primary" for="hasCarToggle">
+                                        I have a vehicle
+                                    </label>
+                                </div>
+                            </div>
+                            <p class="text-muted small mb-3">Enable this if you want to share rides with others</p>
+
+                            <div id="carInfoSection" class="d-none animate-fade-in">
+                                <hr class="my-3 opacity-10">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold small text-muted text-uppercase mb-2">Select
+                                            Vehicle Type <span class="text-danger">*</span></label>
+                                        <div class="d-flex gap-2">
+                                            <div class="flex-fill">
+                                                <input type="radio" class="btn-check" name="vehicleExtType" id="typeCar"
+                                                    value="car" checked onchange="handleVehicleTypeChange('car')">
+                                                <label
+                                                    class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2 rounded-3"
+                                                    for="typeCar">
+                                                    <i class="bi bi-car-front-fill"></i> Car
+                                                </label>
+                                            </div>
+                                            <div class="flex-fill">
+                                                <input type="radio" class="btn-check" name="vehicleExtType"
+                                                    id="typeBike" value="bike"
+                                                    onchange="handleVehicleTypeChange('bike')">
+                                                <label
+                                                    class="btn btn-outline-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2 rounded-3"
+                                                    for="typeBike">
+                                                    <i class="bi bi-bicycle"></i> Bike
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-500 small" id="modelLabel">Vehicle Model Name <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" class="form-control input-custom" id="carModel"
+                                            placeholder="e.g., Toyota Premio">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-500 small" id="numberLabel">Vehicle Number <span
+                                                class="text-danger">*</span></label>
+                                        <input type="text" class="form-control input-custom" id="carNumber"
+                                            placeholder="Dhaka Metro-GA-XX-XXXX">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-500 small">Total Capacity (Excluding driving seat)
+                                            <span class="text-danger">*</span></label>
+                                        <input type="number" class="form-control input-custom" id="carSeats"
+                                            placeholder="e.g., 4" min="1">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-500 small">Who will drive? <span
+                                                class="text-danger">*</span></label>
+                                        <div class="d-flex gap-2">
+                                            <div class="flex-fill">
+                                                <input type="radio" class="btn-check" name="driveType" id="selfDrive"
+                                                    value="self" checked onchange="toggleRiderInfo(false)">
+                                                <label class="btn btn-outline-primary w-100 py-2 btn-sm rounded-3"
+                                                    for="selfDrive">Self Drive</label>
+                                            </div>
+                                            <div class="flex-fill">
+                                                <input type="radio" class="btn-check" name="driveType" id="hasDriver"
+                                                    value="driver" onchange="toggleRiderInfo(true)">
+                                                <label class="btn btn-outline-primary w-100 py-2 btn-sm rounded-3"
+                                                    for="hasDriver">Has Driver</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Driver Profile Section (Only for "Has Driver") -->
+                        <div id="riderProfileSection" class="form-section mt-4 d-none animate-fade-in">
+                            <div class="form-section-title"><i class="bi bi-person-vcard me-2"></i>Rider Profile
+                            </div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Rider First Name <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control input-custom" id="riderFirstName"
+                                        placeholder="Enter first name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Rider Last Name <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control input-custom" id="riderLastName"
+                                        placeholder="Enter last name">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Rider Email Address <span
+                                            class="text-danger">*</span></label>
+                                    <input type="email" class="form-control input-custom" id="riderEmail"
+                                        placeholder="rider@email.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Emergency Contact No <span
+                                            class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control input-custom" id="riderEmergency"
+                                        placeholder="01XXXXXXXXX">
+                                </div>
+                            </div>
+
+                            <div class="text-center mb-4">
+                                <p class="small fw-bold mb-3">Rider Profile Pic <span class="text-danger">*</span></p>
+                                <div class="image-upload mx-auto mb-3" onclick="openCamera('rider_profile')">
+                                    <i class="bi bi-person-video2 fs-2 text-muted" id="riderProfileIcon"></i>
+                                    <img id="riderProfilePreview" class="captured-preview">
+                                </div>
+                                <input type="hidden" id="riderProfileData">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                    onclick="openCamera('rider_profile')">Capture Rider Photo</button>
+                            </div>
+                        </div>
+
+                        <!-- Driver License Section (Always required if has vehicle) -->
+                        <div id="licenseInfoSection" class="form-section mt-4 d-none animate-fade-in">
+                            <div class="form-section-title"><i class="bi bi-card-checklist me-2"></i>Driver Verification
+                            </div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-12">
+                                    <label class="form-label fw-500 small" id="licenseNoLabel">Driver License Number
+                                        <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control input-custom" id="riderLicense"
+                                        placeholder="X-XXXXXXXXXX">
+                                </div>
+                                <div class="col-md-12 text-center">
+                                    <p class="small fw-bold mb-3" id="licensePhotoLabel">License Photo <span
+                                            class="text-danger">*</span></p>
+                                    <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('license')">
+                                        <i class="bi bi-file-earmark-person fs-2 text-muted" id="licenseIcon"></i>
+                                        <img id="licensePreview" class="captured-preview">
+                                    </div>
+                                    <input type="hidden" id="licenseData">
+                                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                        onclick="openCamera('license')">Capture License</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button type="button" class="btn btn-secondary-custom px-4" onclick="goToStep(1)"><i
+                                    class="bi bi-chevron-left me-2"></i>Back</button>
+                            <button type="submit" class="btn btn-success-custom px-5" id="createAccountBtn">
+                                <i class="bi bi-person-plus me-2"></i>Create Account
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header border-0 bg-dark text-white p-3">
+                <h6 class="modal-title fw-bold">Live Camera Verification</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"
+                    onclick="stopCamera()"></button>
+            </div>
+            <div class="modal-body p-0 bg-black">
+                <div class="camera-container">
+                    <video id="cameraVideo" autoplay playsinline></video>
+                    <div class="camera-overlay">
+                        <button class="camera-btn shadow me-2" onclick="rotateCamera()">
+                            <i class="bi bi-arrow-repeat text-dark"></i>
+                        </button>
+                        <button class="camera-btn shadow" onclick="capturePhoto()">
+                            <i class="bi bi-camera-fill text-primary"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 bg-dark text-center p-2 d-flex justify-content-center">
+                <p class="text-white-50 small mb-0"><i class="bi bi-info-circle me-1"></i>Ensure your face/document is
+                    clearly visible</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Canvas for Image Processing -->
+<canvas id="photoCanvas" style="display:none;"></canvas>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentCaptureType = null;
+    let currentFacingMode = 'user';
+    let cameraStream = null;
+    let cameraModal;
+    let video;
+    let canvas;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+        video = document.getElementById('cameraVideo');
+        canvas = document.getElementById('photoCanvas');
+    });
+
+    function goToStep(step) {
+        document.querySelectorAll('.form-step').forEach(s => {
+            s.classList.remove('active');
+            s.style.display = 'none';
+        });
+        const activeStep = document.getElementById('step' + step);
+        activeStep.style.display = 'block';
+        setTimeout(() => activeStep.classList.add('active'), 10);
+
+        document.getElementById('regProgress').style.width = (step === 1 ? '50%' : '100%');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handleVehicleTypeChange(type) {
+        const seatInput = document.getElementById('carSeats');
+        const hasDriverRadio = document.getElementById('hasDriver');
+        const selfDriveRadio = document.getElementById('selfDrive');
+
+        if (type === 'bike') {
+            seatInput.value = 1;
+            seatInput.readOnly = true;
+            seatInput.classList.add('bg-light');
+            document.getElementById('modelLabel').innerText = 'Bike Model Name *';
+            document.getElementById('numberLabel').innerText = 'Bike Number *';
+
+            // Disable Has Driver for Bike
+            hasDriverRadio.disabled = true;
+            hasDriverRadio.nextElementSibling.classList.add('disabled', 'opacity-50');
+            selfDriveRadio.checked = true;
+            toggleRiderInfo(false);
+        } else {
+            seatInput.value = '';
+            seatInput.readOnly = false;
+            seatInput.classList.remove('bg-light');
+            document.getElementById('modelLabel').innerText = 'Car Model Name *';
+            document.getElementById('numberLabel').innerText = 'Car Number *';
+
+            // Enable Has Driver for Car
+            hasDriverRadio.disabled = false;
+            hasDriverRadio.nextElementSibling.classList.remove('disabled', 'opacity-50');
+        }
+    }
+
+    function toggleCarInfo(show) {
+        const carSection = document.getElementById('carInfoSection');
+        const licenseSection = document.getElementById('licenseInfoSection');
+        if (show) {
+            carSection.classList.remove('d-none');
+            licenseSection.classList.remove('d-none');
+            toggleRiderInfo(document.querySelector('input[name="driveType"]:checked').value === 'driver');
+        } else {
+            carSection.classList.add('d-none');
+            licenseSection.classList.add('d-none');
+            document.getElementById('riderProfileSection').classList.add('d-none');
+        }
+    }
+
+    function toggleRiderInfo(show) {
+        const riderSection = document.getElementById('riderProfileSection');
+        const licenseNoLabel = document.getElementById('licenseNoLabel');
+        const licensePhotoLabel = document.getElementById('licensePhotoLabel');
+
+        if (show) {
+            riderSection.classList.remove('d-none');
+            licenseNoLabel.innerHTML = 'Rider License Number <span class="text-danger">*</span>';
+            licensePhotoLabel.innerHTML = 'Rider License Photo <span class="text-danger">*</span>';
+        } else {
+            riderSection.classList.add('d-none');
+            licenseNoLabel.innerHTML = 'Your (Student) License Number <span class="text-danger">*</span>';
+            licensePhotoLabel.innerHTML = 'Your (Student) License Photo <span class="text-danger">*</span>';
+        }
+    }
+
+    async function openCamera(type) {
+        currentCaptureType = type;
+
+        // Use back camera for documents, front camera for profile initially
+        currentFacingMode = (type === 'idcard' || type === 'license') ? 'environment' : 'user';
+        await startCameraStream();
+    }
+
+    async function rotateCamera() {
+        currentFacingMode = (currentFacingMode === 'user') ? 'environment' : 'user';
+        await startCameraStream();
+    }
+
+    async function startCameraStream() {
+        stopCamera(); // Clean up existing stream
+
+        const constraints = {
+            video: {
+                facingMode: currentFacingMode,
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            },
+            audio: false
+        };
+
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+            video.srcObject = cameraStream;
+            if (!cameraModal._isShown) cameraModal.show();
+        } catch (err) {
+            console.error("Camera error: ", err);
+            if (err.name === 'NotAllowedError') {
+                showToast("Camera access denied. Please allow camera permission in your browser settings.", "error");
+            } else {
+                showToast("Could not access camera. Please check your device connection.", "error");
+            }
+        }
+    }
+
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
+        }
+    }
+
+    function capturePhoto() {
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const imageData = canvas.toDataURL('image/jpeg');
+
+        const previewMap = {
+            'profile': { preview: 'profilePicPreview', icon: 'profilePicIcon', input: 'profilePicData' },
+            'idcard': { preview: 'idCardPreview', icon: 'idCardIcon', input: 'idCardData' },
+            'rider_profile': { preview: 'riderProfilePreview', icon: 'riderProfileIcon', input: 'riderProfileData' },
+            'license': { preview: 'licensePreview', icon: 'licenseIcon', input: 'licenseData' }
+        };
+
+        const target = previewMap[currentCaptureType];
+        if (target) {
+            const previewImg = document.getElementById(target.preview);
+            const icon = document.getElementById(target.icon);
+            const input = document.getElementById(target.input);
+
+            previewImg.src = imageData;
+            previewImg.style.display = 'block';
+            if (icon) icon.style.display = 'none';
+            input.value = imageData;
+
+            showToast("Photo captured!", "success");
+        }
+
+        stopCamera();
+        cameraModal.hide();
+    }
+
+    async function handleUnifiedSignup(event) {
+        event.preventDefault();
+
+        const btn = document.getElementById('createAccountBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Securing Account...';
+
+        const data = {
+            iub_id: document.getElementById('regIubId').value,
+            first_name: document.getElementById('regFirstName').value,
+            last_name: document.getElementById('regLastName').value,
+            alt_email: document.getElementById('regAltEmail').value,
+            emergency_phone: document.getElementById('regEmergencyPhone').value,
+            password: document.getElementById('regPassword').value,
+            profile_pic: document.getElementById('profilePicData').value,
+            id_card_pic: document.getElementById('idCardData').value,
+            has_car: document.getElementById('hasCarToggle').checked
+        };
+
+        // Basic Validation
+        if (!data.profile_pic || !data.id_card_pic) {
+            showToast("Please capture profile and ID card photos", "warning");
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+            return;
+        }
+
+        if (data.has_car) {
+            const carModel = document.getElementById('carModel').value;
+            const carNumber = document.getElementById('carNumber').value;
+            const carSeats = document.getElementById('carSeats').value;
+            const driveType = document.querySelector('input[name="driveType"]:checked').value;
+
+            if (!carModel || !carNumber || !carSeats) {
+                showToast("Please fill in car details", "warning");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                return;
+            }
+
+            data.car_info = {
+                model: carModel,
+                car_no: carNumber,
+                total_seats: carSeats,
+                drive_type: driveType
+            };
+
+            if (driveType === 'driver') {
+                data.rider_info = {
+                    first_name: document.getElementById('riderFirstName').value,
+                    last_name: document.getElementById('riderLastName').value,
+                    email: document.getElementById('riderEmail').value,
+                    emergency_no: document.getElementById('riderEmergency').value,
+                    license_no: document.getElementById('riderLicense').value,
+                    profile_pic: document.getElementById('riderProfileData').value,
+                    license_pic: document.getElementById('licenseData').value
+                };
+
+                if (!data.rider_info.first_name || !data.rider_info.last_name || !data.rider_info.email || !data.rider_info.emergency_no || !data.rider_info.license_no) {
+                    showToast("Please fill in rider details and license info", "warning");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                    return;
+                }
+
+                if (!data.rider_info.profile_pic || !data.rider_info.license_pic) {
+                    showToast("Please capture rider profile and license photos", "warning");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                    return;
+                }
+            } else {
+                // Self Drive - still need student license info
+                data.student_license = {
+                    no: document.getElementById('riderLicense').value,
+                    pic: document.getElementById('licenseData').value
+                };
+
+                if (!data.student_license.no || !data.student_license.pic) {
+                    showToast("Please provide your license number and photo", "warning");
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                    return;
+                }
+            }
+        }
+
+        // Simulate creation
+        setTimeout(() => {
+            if (typeof appState !== 'undefined') {
+                appState.isLoggedIn = true;
+                appState.userType = 'student';
+                appState.currentUser = {
+                    name: "Community Member",
+                    iub_id: data.iub_id,
+                    email: data.alt_email,
+                    type: 'student',
+                    has_car: data.has_car,
+                    drive_type: data.has_car ? data.car_info.drive_type : null
+                };
+                saveState();
+                showToast("Welcome to RideBuddy!", "success");
+                setTimeout(() => window.location.href = routes['home_student'], 1000);
+            }
+        }, 1500);
+    }
+</script>
+{% endblock %}
