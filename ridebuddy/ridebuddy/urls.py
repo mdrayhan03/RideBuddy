@@ -23,7 +23,8 @@ urlpatterns = [
     path('', include("accounts.urls")),
     path('', include("bookings.urls")),
     path('', include("reviews.urls")),
-    path('', include("rides.urls")),
+    path('rides/', include("rides.urls")),
+    path('accounts/', include('django.contrib.auth.urls')),
     
     # Root-level SEO and PWA files
     path('service-worker.js', (TemplateView.as_view(template_name="service-worker.js", content_type='application/javascript', ))),

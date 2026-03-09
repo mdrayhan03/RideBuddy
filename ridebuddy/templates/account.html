@@ -1,0 +1,338 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Account - RideBuddy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, {% if request.session.active_role == 'rider' %}#34a853{% else %}var(--primary-color){% endif %} 0%, #4285f4 100%);
+        border-radius: 0 0 30px 30px;
+        padding-top: 40px;
+        color: white;
+    }
+
+    .profile-avatar-container {
+        position: relative;
+        margin-top: -60px;
+    }
+
+    .profile-avatar-main {
+        width: 120px;
+        height: 120px;
+        border-radius: 30px;
+        border: 5px solid white;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        background: white;
+        object-fit: cover;
+    }
+
+    .account-section {
+        background: white;
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .section-title {
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--primary-color);
+    }
+
+    .info-item {
+        margin-bottom: 15px;
+    }
+
+    .info-label {
+        font-size: 0.8rem;
+        color: #6c757d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+    }
+
+    .info-value {
+        font-weight: 600;
+        color: #202124;
+    }
+
+    .settings-item {
+        padding: 16px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .settings-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    .settings-item:last-child {
+        border-bottom: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="mainApp">
+    <div class="main-content" id="mainContent">
+        <div class="page active" id="accountPage">
+            <!-- Header Background -->
+            <div class="profile-header text-center pb-5">
+                <div class="container py-4">
+                    <h4 class="fw-bold mb-0">{% if request.session.active_role == 'rider' %}Rider Profile{% else %}Member Profile{% endif %}</h4>
+                </div>
+            </div>
+
+            <!-- Profile Info Container -->
+            <div class="container px-4">
+                <div class="text-center profile-avatar-container mb-4">
+                    {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" class="profile-avatar-main mb-3">
+                    {% else %}
+                    <img src="https://ui-avatars.com/api/?name={{ user.first_name }}+{{ user.last_name }}&background=random"
+                        class="profile-avatar-main mb-3">
+                    {% endif %}
+                    <h5 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h5>
+                    
+                    <div class="d-flex justify-content-center gap-2 mt-2">
+                        {% if user.is_student %}
+                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill small">
+                            <i class="bi bi-mortarboard-fill me-1"></i> Student
+                        </span>
+                        {% endif %}
+                        {% if user.is_rider %}
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill small">
+                            <i class="bi bi-bicycle me-1"></i> Rider
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Personal Details Section -->
+                <div class="account-section mb-4">
+                    <div class="section-title"><i class="bi bi-person-check"></i>Personal Details</div>
+                    <div class="row g-3">
+                        <div class="col-6 info-item">
+                            <div class="info-label">First Name</div>
+                            <div class="info-value">{{ user.first_name }}</div>
+                        </div>
+                        <div class="col-6 info-item">
+                            <div class="info-label">Last Name</div>
+                            <div class="info-value">{{ user.last_name }}</div>
+                        </div>
+                        <div class="col-12 info-item">
+                            <div class="info-label">Email Address</div>
+                            <div class="info-value">{{ user.email }}</div>
+                        </div>
+                        <div class="col-6 info-item">
+                            <div class="info-label">Phone Number</div>
+                            <div class="info-value">{{ user.phone_no }}</div>
+                        </div>
+                        <div class="col-6 info-item">
+                            <div class="info-label">Emergency Contact</div>
+                            <div class="info-value">{{ user.emergency_contact|default:"N/A" }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Role Specific IDs & Cards -->
+                <div class="account-section mb-4">
+                    <div class="section-title"><i class="bi bi-shield-check"></i>Verification</div>
+                    
+                    <div class="row g-4">
+                        {% if user.is_student %}
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded-4 border">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="info-label mb-0">Student ID Card</span>
+                                    <span class="fw-bold small">{{ user.student_profile.id_no }}</span>
+                                </div>
+                                <div class="text-center">
+                                    {% if user.student_profile.id_picture %}
+                                    <img src="{{ user.student_profile.id_picture.url }}" class="img-fluid rounded-3 border" style="max-height: 200px;">
+                                    {% else %}
+                                    <div class="text-muted small py-3">No ID Uploaded</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        {% if user.is_rider %}
+                        <div class="col-12">
+                            <div class="p-3 bg-light rounded-4 border">
+                                <div class="d-flex justify-content-between mb-3">
+                                    <span class="info-label mb-0">Driving License</span>
+                                    <span class="fw-bold small">{{ user.rider_profile.license_no }}</span>
+                                </div>
+                                <div class="text-center">
+                                    {% if user.rider_profile.license_picture %}
+                                    <img src="{{ user.rider_profile.license_picture.url }}" class="img-fluid rounded-3 border" style="max-height: 200px;">
+                                    {% else %}
+                                    <div class="text-muted small py-3">No License Uploaded</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Vehicle Info -->
+                {% if user.student_profile.vehicle or user.rider_profile.vehicle %}
+                <div class="account-section mb-4">
+                    {% if user.is_student and user.student_profile.has_vehicle %}
+                        <div class="section-title"><i class="bi bi-car-front"></i>My Registered Vehicle</div>
+                    {% else %}
+                        <div class="section-title"><i class="bi bi-car-front"></i>Assigned Vehicle</div>
+                    {% endif %}
+
+                    {% with v=user.student_profile.vehicle|default:user.rider_profile.vehicle %}
+                    <div class="row g-3">
+                        <div class="col-6 info-item">
+                            <div class="info-label">Vehicle Type</div>
+                            <div class="info-value">{{ v.get_vehicle_type_display|title }}</div>
+                        </div>
+                        <div class="col-6 info-item">
+                            <div class="info-label">Vehicle Model</div>
+                            <div class="info-value">{{ v.vehicle_model }}</div>
+                        </div>
+                        <div class="col-6 info-item">
+                            <div class="info-label">Plate Number</div>
+                            <div class="info-value">{{ v.vehicle_plate_no }}</div>
+                        </div>
+                        <div class="col-6 info-item">
+                            <div class="info-label">Capacity</div>
+                            <div class="info-value">{{ v.capacity }} Seats</div>
+                        </div>
+                        
+                        {% if v.tax_token_picture %}
+                        <div class="col-12 mt-3 text-center">
+                             <div class="info-label">Tax Token</div>
+                             <img src="{{ v.tax_token_picture.url }}" class="img-fluid rounded-3 border mt-2" style="max-height: 150px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endwith %}
+                </div>
+                {% endif %}
+
+                <!-- Connection Section (Employer/Hired Rider) -->
+                {% if user.is_student and user.student_profile.driver_type == 'has_driver' %}
+                <div class="account-section mb-4">
+                    <div class="section-title"><i class="bi bi-person-badge"></i>My Hired Rider</div>
+                    {% with rider_profile=user.student_profile.hired_riders.first %}
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar avatar-md bg-light border overflow-hidden" style="width: 60px; height: 60px; border-radius: 20px;">
+                            {% if rider_profile.user.profile_picture %}
+                            <img src="{{ rider_profile.user.profile_picture.url }}" class="w-100 h-100 object-fit-cover">
+                            {% else %}
+                            <div class="w-100 h-100 d-flex align-items-center justify-content-center fw-bold text-muted">
+                                {{ rider_profile.user.first_name|first }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ rider_profile.user.get_full_name }}</div>
+                            <div class="text-muted small">License: {{ rider_profile.license_no }}</div>
+                            <div class="text-muted x-small"><i class="bi bi-telephone me-1"></i>{{ rider_profile.user.phone_no }}</div>
+                        </div>
+                    </div>
+                    {% endwith %}
+                </div>
+                {% elif user.is_rider and user.rider_profile.employer_student %}
+                <div class="account-section mb-4">
+                    <div class="section-title"><i class="bi bi-person-workspace"></i>My Employer</div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar avatar-md bg-light border overflow-hidden" style="width: 60px; height: 60px; border-radius: 20px;">
+                            {% if user.rider_profile.employer_student.user.profile_picture %}
+                            <img src="{{ user.rider_profile.employer_student.user.profile_picture.url }}" class="w-100 h-100 object-fit-cover">
+                            {% else %}
+                            <div class="w-100 h-100 d-flex align-items-center justify-content-center fw-bold text-muted">
+                                {{ user.rider_profile.employer_student.user.first_name|first }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="fw-bold">{{ user.rider_profile.employer_student.user.get_full_name }}</div>
+                            <div class="text-muted small">Member ID: {{ user.rider_profile.employer_student.id_no }}</div>
+                            <div class="text-muted x-small"><i class="bi bi-telephone me-1"></i>{{ user.rider_profile.employer_student.user.phone_no }}</div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Quick Actions -->
+                <div class="account-section p-0 overflow-hidden mb-4">
+                    <div class="settings-item d-flex align-items-center" onclick="showWalletPage()">
+                        <div class="settings-icon me-3 d-flex align-items-center justify-content-center"
+                            style="width: 40px; height: 40px; border-radius: 12px; background: rgba(52, 168, 83, 0.1); color: #34a853;">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="mb-0 fw-bold">Wallet</p>
+                            <small class="text-muted">Balance: ৳450</small>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </div>
+                    <div class="settings-item d-flex align-items-center" onclick="showSettingsPage()">
+                        <div class="settings-icon me-3 d-flex align-items-center justify-content-center"
+                            style="width: 40px; height: 40px; border-radius: 12px; background: rgba(26, 115, 232, 0.1); color: #1a73e8;">
+                            <i class="bi bi-gear"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="mb-0 fw-bold">Settings</p>
+                            <small class="text-muted">Profile, Preferences</small>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </div>
+                    
+                    {% if user.is_student and user.is_rider %}
+                        {% if request.session.active_role == 'student' %}
+                        <div class="settings-item d-flex align-items-center" onclick="switchToRole('rider')">
+                            <div class="settings-icon me-3 d-flex align-items-center justify-content-center"
+                                style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+                                <i class="bi bi-person-workspace text-warning shadow-sm"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <p class="mb-0 fw-bold">Switch to Rider View</p>
+                                <small class="text-muted">Return to rider dashboard</small>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>
+                        {% else %}
+                        <div class="settings-item d-flex align-items-center" onclick="switchToRole('student')">
+                            <div class="settings-icon me-3 d-flex align-items-center justify-content-center"
+                                style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255, 193, 7, 0.1); color: #ffc107;">
+                                <i class="bi bi-person-workspace text-warning shadow-sm"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <p class="mb-0 fw-bold">Switch to Student View</p>
+                                <small class="text-muted">Return to student dashboard</small>
+                            </div>
+                            <i class="bi bi-chevron-right text-muted"></i>
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+
+                <button class="btn btn-outline-danger w-100 py-3 rounded-4 fw-bold mb-5" onclick="handleLogout()">
+                    <i class="bi bi-box-arrow-right me-2"></i>Sign Out
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Navigation and Logout are handled by base.html or global JS
+</script>
+{% endblock %}

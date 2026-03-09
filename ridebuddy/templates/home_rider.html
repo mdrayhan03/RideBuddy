@@ -3,6 +3,64 @@
 
 {% block title %}Rider Home - RideBuddy{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+<style>
+    #riderHomeMap {
+        height: 350px;
+        border-radius: 20px;
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+        z-index: 1;
+    }
+    .leaflet-routing-container { display: none; }
+    
+    .passenger-avatars .avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--primary-color);
+        color: white;
+    }
+
+    .rider-marker-container {
+        position: relative;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .rider-marker-ping {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        background: rgba(26, 115, 232, 0.3);
+        border-radius: 50%;
+        animation: ping 2s infinite ease-out;
+        z-index: -1;
+    }
+    @keyframes ping {
+        0% { transform: scale(0.5); opacity: 1; }
+        100% { transform: scale(2); opacity: 0; }
+    }
+    .ls-1 { letter-spacing: 1px; }
+
+    .card-custom {
+        transition: transform 0.2s;
+    }
+    .card-custom:active {
+        transform: scale(0.98);
+    }
+    .leaflet-div-icon {
+        background: transparent !important;
+        border: none !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div id="mainApp">
     <div class="main-content" id="mainContent">
@@ -10,106 +68,208 @@
             <div class="p-4 fade-in">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h5 class="mb-1 fw-bold">Hello, <span id="riderNameDisplay">Rider</span>! 🏍️</h5>
+                        <h5 class="mb-1 fw-bold">Hello, <span id="riderNameDisplay">{{ user.first_name|default:user.username }}</span>! 🏍️</h5>
                         <p class="text-muted small mb-0">Ready to accept rides?</p>
                     </div>
+                    {% if user.profile_picture %}
+                    <img src="{{ user.profile_picture.url }}" class="avatar avatar-sm rounded-circle" alt="Profile">
+                    {% else %}
                     <div class="avatar avatar-sm"
-                        style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);"
-                        id="riderAvatarSmall">R</div>
-                </div><!-- Map -->
-                <div class="map-container mb-4" style="height: 220px;">
-                    <div class="map-marker"><i class="bi bi-geo-alt-fill"></i>
+                        style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
+                        {{ user.username|slice:":1"|upper }}
                     </div>
-                </div><!-- Status Toggle -->
-                <div class="card-custom p-4 mb-4">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <p class="mb-0 fw-500">Online Status</p><small class="text-muted">Toggle to receive
-                                ride requests</small>
+                    {% endif %}
+                </div>
+
+                <!-- Map -->
+                <div id="riderHomeMap" class="mb-2"></div>
+                <div id="mapLegend" class="map-legend mb-4"></div>
+
+                <!-- Active Ride Card (Dynamic) -->
+                {% if active_ride %}
+                <div class="active-ride-info-card mb-4 animate-slide-up" onclick="location.href='{% url 'rides:ride_host_rider' %}'" style="cursor: pointer;">
+                    <div class="card-custom p-4 border-2 border-primary bg-white shadow-sm position-relative overflow-hidden" style="border: 2px solid var(--primary-color) !important;">
+                        <div class="position-absolute top-0 end-0 p-2">
+                             <span class="badge bg-primary px-3 rounded-pill shadow-sm">Active Ride</span>
                         </div>
-                        <div class="form-check form-switch"><input class="form-check-input" type="checkbox"
-                                id="riderOnlineToggle" style="width: 50px; height: 26px;" checked
-                                onchange="toggleRiderStatus()">
+                        
+                        <h6 class="fw-bold mb-3 text-dark">Current Ride Info</h6>
+                        
+                        <div class="d-flex align-items-center mb-4">
+                            <div class="passenger-avatars d-flex me-3">
+                                {% for p in active_ride.passengers %}
+                                    {% if not p.is_rider %}
+                                    <div class="avatar border border-2 border-white rounded-circle shadow-sm" 
+                                         style="margin-left: {% if forloop.first %}0{% else %}-12px{% endif %}; z-index: {{ forloop.revindex }};"
+                                         title="{{ p.name }}">
+                                        {% if p.photo %}
+                                            <img src="{{ p.photo }}" alt="{{ p.name }}" class="rounded-circle w-100 h-100" style="object-fit: cover;">
+                                        {% else %}
+                                            <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-primary text-white rounded-circle">
+                                                {{ p.initial }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                            <div class="small fw-600 text-muted">{{ active_ride.joined_passenger_count }} Student{{ active_ride.joined_passenger_count|pluralize }} Joined</div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <p class="text-muted x-small mb-1 text-uppercase fw-bold ls-1">Estimated Fare</p>
+                                <h4 class="fw-bold mb-0 text-primary">৳{{ active_ride.total_fare }}</h4>
+                            </div>
+                            <div class="col-6 text-end">
+                                <p class="text-muted x-small mb-1 text-uppercase fw-bold ls-1">Available Seats</p>
+                                <h4 class="fw-bold mb-0 text-success">{{ active_ride.available_seats }}</h4>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center bg-light p-2 px-3 rounded-pill mb-4">
+                            <div class="small text-muted"><i class="bi bi-car-front me-1"></i>{{ active_ride.vehicle.model }}</div>
+                            <div class="small text-muted"><i class="bi bi-hash me-1"></i>{{ active_ride.vehicle.plate_no }}</div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="text-primary-custom small fw-600">
+                                    View Details & Navigation
+                                </div>
+                                <i class="bi bi-chevron-right text-primary"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
+                {% endif %}
+
+                {% if not active_ride %}
                 <h6 class="fw-bold mb-3"><i class="bi bi-lightning me-2"></i>Available Ride Requests</h6>
                 <div id="availableRideRequests">
-                    <div class="available-ride-card" onclick="showRideRequestDetail(1)">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-3">A</div>
-                                <div>
-                                    <p class="mb-0 fw-500">Anika Rahman</p>
-                                    <div class="rating-stars small"><i class="bi bi-star-fill"></i> <span
-                                            class="ms-1">4.8</span>
-                                    </div>
-                                </div>
-                            </div><span class="badge bg-primary">৳120</span>
-                        </div>
-                        <div class="share-ride-info small">
-                            <div class="d-flex justify-content-between"><span><i class="bi bi-geo-alt me-1"></i>Main
-                                    Gate
-                                </span> <span><i class="bi bi-arrow-right"></i></span> <span><i
-                                        class="bi bi-geo-alt-fill me-1"></i>Gulshan</span>
-                            </div>
-                            <div class="mt-1 d-flex justify-content-between text-muted"><span><i
-                                        class="bi bi-clock me-1"></i>2 min away</span> <span><i
-                                        class="bi bi-signpost-split me-1"></i>4.5 km</span>
-                            </div>
-                        </div>
-                        <div class="d-grid gap-2 mt-3"><button class="btn btn-success-custom btn-sm"
-                                onclick="event.stopPropagation(); acceptRide(1)"> <i
-                                    class="bi bi-check-circle me-1"></i>Accept </button>
-                        </div>
-                    </div>
-                    <div class="available-ride-card" onclick="showRideRequestDetail(2)">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm me-3"
-                                    style="background: linear-gradient(135deg, #f9ab00 0%, #fbbc05 100%);">T
-                                </div>
-                                <div>
-                                    <p class="mb-0 fw-500">Tanvir Hasan</p>
-                                    <div class="rating-stars small"><i class="bi bi-star-fill"></i> <span
-                                            class="ms-1">4.5</span>
-                                    </div>
-                                </div>
-                            </div><span class="badge bg-primary">৳85</span>
-                        </div>
-                        <div class="share-ride-info small">
-                            <div class="d-flex justify-content-between"><span><i class="bi bi-geo-alt me-1"></i>Main
-                                    Gate
-                                </span> <span><i class="bi bi-arrow-right"></i></span> <span><i
-                                        class="bi bi-geo-alt-fill me-1"></i>Banani</span>
-                            </div>
-                            <div class="mt-1 d-flex justify-content-between text-muted"><span><i
-                                        class="bi bi-clock me-1"></i>5 min away</span> <span><i
-                                        class="bi bi-signpost-split me-1"></i>3.2 km</span>
-                            </div>
-                        </div>
-                        <div class="d-grid gap-2 mt-3"><button class="btn btn-success-custom btn-sm"
-                                onclick="event.stopPropagation(); acceptRide(2)"> <i
-                                    class="bi bi-check-circle me-1"></i>Accept </button>
-                        </div>
+                    <div class="text-center py-5">
+                        <div class="mb-3"><i class="bi bi-search fs-2 text-muted opacity-50"></i></div>
+                        <p class="text-muted">Searching for nearby requests...</p>
                     </div>
                 </div>
+                {% endif %}
             </div>
         </div>
-    </div><!-- Bottom Navigation -->
-    <nav class="bottom-nav d-flex" id="bottomNav">
-        <div class="nav-item active" data-tab="home" onclick="switchNavTab('home')"><i class="bi bi-house-door"></i>
-            <p class="mb-0 small">Home</p>
-        </div>
-        <div class="nav-item" data-tab="activity" onclick="switchNavTab('activity')"><i class="bi bi-activity"></i>
-            <p class="mb-0 small">Activity</p>
-        </div>
-        <div class="nav-item" data-tab="history" onclick="switchNavTab('history')"><i class="bi bi-clock-history"></i>
-            <p class="mb-0 small">History</p>
-        </div>
-        <div class="nav-item" data-tab="account" onclick="switchNavTab('account')"><i class="bi bi-person"></i>
-            <p class="mb-0 small">Account</p>
-        </div>
-    </nav>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        initRiderHomeMap();
+    });
+
+    function initRiderHomeMap() {
+        const rLat = {{ rider_location.lat|default:23.8103 }};
+        const rLng = {{ rider_location.lng|default:90.4125 }};
+
+        const map = L.map('riderHomeMap', {
+            zoomControl: false
+        }).setView([rLat, rLng], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OSM'
+        }).addTo(map);
+
+        const mapData = {{ map_data|safe }};
+        const bounds = L.latLngBounds();
+        const legendContainer = document.getElementById('mapLegend');
+        const uniqueLegendEntries = new Set();
+        if (legendContainer) legendContainer.innerHTML = '';
+
+        if (mapData && mapData.markers) {
+            mapData.markers.forEach(m => {
+                let icon;
+                if (m.type === 'rider') {
+                    // Custom rider icon with ping
+                    icon = L.divIcon({
+                        className: 'rider-marker',
+                        html: `<div class="rider-marker-container">
+                                <div class="rider-marker-ping"></div>
+                                <img src="${m.icon}" style="width:38px; height:38px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); position: relative; z-index: 2;">
+                               </div>`,
+                        iconSize: [40, 40],
+                        iconAnchor: [20, 20]
+                    });
+                } else {
+                    // Member markers - using square proportions to avoid skew
+                    icon = L.divIcon({
+                        className: 'member-marker',
+                        html: `<img src="${m.icon}" style="width:35px; height:35px; filter: drop-shadow(0 3px 5px rgba(0,0,0,0.25));">`,
+                        iconSize: [35, 35],
+                        iconAnchor: [17.5, 35], // Anchor at the bottom center if it's a pin, or center if round
+                        popupAnchor: [0, -30]
+                    });
+                }
+
+                const marker = L.marker([m.lat, m.lng], { icon: icon }).addTo(map);
+                if (m.popup) {
+                    marker.bindPopup(m.popup);
+                }
+                bounds.extend([m.lat, m.lng]);
+
+                // Populate Legend
+                if (legendContainer && m.name && !uniqueLegendEntries.has(m.name)) {
+                    uniqueLegendEntries.add(m.name);
+                    const legendItem = document.createElement('div');
+                    legendItem.className = 'legend-item';
+                    legendItem.innerHTML = `
+                        <img src="${m.icon}" style="width: 20px; height: 20px; object-fit: contain;">
+                        <span>${m.name.split(' ')[0]}</span>
+                    `;
+                    legendContainer.appendChild(legendItem);
+                }
+            });
+
+            // Routing
+            if (mapData.waypoints && mapData.waypoints.length >= 2) {
+                const lrmWaypoints = mapData.waypoints.map(w => L.latLng(w.lat, w.lng));
+                
+                L.Routing.control({
+                    waypoints: lrmWaypoints,
+                    routeWhileDragging: false,
+                    addWaypoints: false,
+                    draggableWaypoints: false,
+                    lineOptions: { 
+                        styles: [{ color: '#1a73e8', weight: 6, opacity: 0.8 }] 
+                    },
+                    createMarker: () => null // Markers handled above
+                }).addTo(map);
+                
+                setTimeout(() => {
+                    map.fitBounds(bounds, { padding: [50, 50] });
+                }, 500);
+            }
+        } else {
+            // No active ride logic
+            const riderIcon = L.divIcon({
+                className: 'r-marker',
+                html: `<div class="rider-marker-container">
+                        <div class="rider-marker-ping"></div>
+                        <i class="bi bi-geo-alt-fill fs-3 text-primary shadow"></i>
+                       </div>`,
+                iconSize: [30, 30],
+                iconAnchor: [15, 30]
+            });
+            L.marker([rLat, rLng], { icon: riderIcon }).addTo(map);
+            bounds.extend([rLat, rLng]);
+            map.setView([rLat, rLng], 15);
+        }
+    }
+
+    function toggleRiderStatus() {
+        const isOnline = document.getElementById('riderOnlineToggle').checked;
+        if (typeof showToast !== 'undefined') {
+            showToast(`You are now ${isOnline ? 'online' : 'offline'}`, isOnline ? 'success' : 'info');
+        }
+    }
+</script>
 {% endblock %}

@@ -3,6 +3,8 @@
 
 {% block title %}Welcome to RideBuddy{% endblock %}
 
+{% block bottom_nav %}{% endblock %}
+
 {% block content %}
 <div id="ultraLanding">
     <!-- Ultra Hero Section -->
@@ -26,11 +28,11 @@
                             <i class="bi bi-phone-vibrate fs-5"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <div class="fw-bold small text-white">RideBuddy for Desktop</div>
+                            <div id="pwaInstallTitle" class="fw-bold small text-white">RideBuddy for Desktop</div>
                             <div class="text-white-50" style="font-size: 0.75rem;">Install for instant matching
                                 notifications</div>
                         </div>
-                        <button class="btn btn-white btn-sm rounded-pill px-4 fw-bold"
+                        <button id="pwaInstallBtn" class="btn btn-white btn-sm rounded-pill px-4 fw-bold"
                             onclick="installApp()">Install</button>
                     </div>
                 </div>

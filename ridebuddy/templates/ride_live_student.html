@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+<style>
+    #rideMap {
+        height: 250px;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        z-index: 1;
+    }
+
+    .leaflet-routing-container {
+        display: none;
+    }
+
+    .host-status-card {
+        background: linear-gradient(135deg, #202124 0%, #3c4043 100%);
+        color: white;
+        border-radius: 24px;
+        padding: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .pulse-glow {
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        animation: pulse 3s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.3; }
+        50% { transform: scale(1.5); opacity: 0.1; }
+        100% { transform: scale(1); opacity: 0.3; }
+    }
+
+    .passenger-item-v2 {
+        background: white;
+        border-radius: 16px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border: 1px solid #f1f1f1;
+        transition: all 0.2s;
+        cursor: pointer;
+    }
+
+    .passenger-avatar-v2 {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: #eee;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 1.1rem;
+        overflow: hidden;
+    }
+
+    .map-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #202124;
+        padding: 5px 10px;
+    }
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: #f8f9fa;
+        padding: 4px 10px;
+        border-radius: 20px;
+        border: 1px solid #eee;
+    }
+
+    /* Ride Info Styles */
+    .ride-info-badge-card {
+        background: #fdfdfd;
+        border-radius: 20px;
+        padding: 16px;
+        border: 1px solid #eee;
+        margin-bottom: 20px;
+    }
+
+    .info-item {
+        text-align: center;
+    }
+    .info-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        color: #888;
+        font-weight: 700;
+        margin-bottom: 4px;
+    }
+    .info-value {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #202124;
+    }
+
+    .status-badge-premium {
+        font-size: 0.6rem;
+        font-weight: 900;
+        padding: 4px 12px;
+        border-radius: 50px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .rider-ptr {
+        background: #ea4335;
+        border: 3px solid white;
+        border-radius: 50%;
+        box-shadow: 0 0 15px rgba(234, 67, 53, 0.4);
+    }
+    
+    .passenger-ptr {
+        background: #1a73e8;
+        border: 2px solid white;
+        border-radius: 50%;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="mainApp">
+    <div class="main-content">
+        <div class="page active">
+            <div class="p-4 pb-5 fade-in">
+                <!-- Header -->
+                <div class="d-flex align-items-center mb-4">
+                    <button class="btn btn-link p-0 me-3 text-dark" onclick="navigateTo('activity_student')">
+                        <i class="bi bi-arrow-left fs-4"></i>
+                    </button>
+                    <h5 class="mb-0 fw-bold">Live Tracking</h5>
+                </div>
+
+                <!-- Status Card -->
+                <div class="host-status-card mb-4 shadow-lg">
+                    <div class="pulse-glow"></div>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 rounded-pill px-3 py-2 small fw-bold">
+                           <i class="bi bi-broadcast me-1"></i> JOURNEY LIVE
+                        </span>
+                        <div class="small fw-bold text-white-50" id="userFareDisplay">Journey in Progress</div>
+                    </div>
+                    
+                    <h3 class="fw-bold mb-2">Tracking Rider</h3>
+                    <p class="small opacity-75 mb-0" id="hostRouteText">Real-time location updates of all participants.</p>
+                </div>
+
+                <!-- Map -->
+                <div id="rideMap" class="mb-1"></div>
+                <div id="mapLegend" class="map-legend mb-4"></div>
+
+                 <!-- Ride Info -->
+                <div class="ride-info-badge-card shadow-sm">
+                    <div class="row align-items-center">
+                        <div class="col-6 border-end text-center">
+                            <div class="info-label">Status</div>
+                            <div class="info-value text-success">On the Road</div>
+                        </div>
+                        <div class="col-6 text-center">
+                            <div class="info-label">Progress</div>
+                            <div class="info-value">Live</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participants List -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6 class="fw-bold mb-0">Journey Progress</h6>
+                    </div>
+                    <div id="passengersListContainer">
+                        <div class="text-center py-4 text-muted small">
+                            <span class="spinner-border spinner-border-sm me-2"></span>Connecting...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Emergency Button -->
+                <div class="d-grid mt-4">
+                    <a href="tel:999" class="btn btn-danger-custom btn-lg shadow rounded-4 py-3 fw-bold">
+                        <i class="bi bi-telephone-outbound-fill me-2"></i>Emergency Call (999)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="profileInfoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow-lg overflow-hidden">
+             <div class="modal-header border-0 bg-dark text-white p-4">
+                <h5 class="modal-title fw-bold">Participant Profile</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 text-center">
+                 <div class="py-5 bg-dark text-white">
+                    <div id="profileModalImgContainer" class="avatar avatar-xl bg-primary mx-auto mb-3 border-4 border-dark"></div>
+                    <h4 class="fw-bold mb-1" id="profileModalName">Name</h4>
+                    <p class="text-white-50 small mb-0" id="profileModalRole">Role</p>
+                </div>
+                <div class="p-4">
+                    <div class="p-3 bg-light rounded-4 border">
+                        <div class="text-muted small text-uppercase fw-bold mb-1">Verification</div>
+                        <div class="fw-bold text-success">Verified Community Member</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+<script>
+    let currentRide = null;
+    let locationInterval;
+    let trackingInterval;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const rideId = urlParams.get('ride_id');
+        
+        if (!rideId) {
+            showToast("No active journey found", "error");
+            navigateTo('activity_student');
+            return;
+        }
+
+        // Initialize Map via centralized manager
+        rideMapManager.init('rideMap');
+
+        await fetchJourneyState(rideId);
+        startLocationTracking();
+        
+        locationInterval = setInterval(() => fetchJourneyState(rideId), 5000);
+    });
+
+    async function fetchJourneyState(rideId) {
+        try {
+            const response = await fetch(`${routes['get_ride_details_api'].replace('0', rideId)}`);
+            const data = await response.json();
+            if (!data.success) return;
+
+            if (data.ride.status === 'completed') {
+                clearInterval(locationInterval);
+                clearInterval(trackingInterval);
+                showToast("Journey completed!", "success");
+                setTimeout(() => navigateTo('activity_student'), 2000);
+                return;
+            }
+
+            currentRide = data.ride;
+            updateJourneyUI(data.ride);
+            
+            // Centralized rendering for Markers, Icons, and Routing
+            if (data.map_data) {
+                rideMapManager.renderRideData(data.map_data);
+                updateMapLegend(data.map_data);
+            }
+        } catch (error) {
+            console.error("Sync error:", error);
+        }
+    }
+
+    function updateMapLegend(mapData) {
+        const legendContainer = document.getElementById('mapLegend');
+        if (!legendContainer) return;
+        legendContainer.innerHTML = '';
+        const uniqueNames = new Set();
+
+        mapData.markers.forEach(m => {
+            if (m.name && !uniqueNames.has(m.name)) {
+                uniqueNames.add(m.name);
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+                item.innerHTML = `
+                    <img src="${m.icon}" style="width: 20px; height: 20px; object-fit: contain;">
+                    <span>${m.name.split(' ')[0]}</span>
+                `;
+                legendContainer.appendChild(item);
+            }
+        });
+    }
+
+    function updateJourneyUI(ride) {
+        const container = document.getElementById('passengersListContainer');
+        const displayedPassengers = ride.passengers.filter(p => !p.is_rider);
+        
+        container.innerHTML = displayedPassengers.map(p => {
+            const isPicked = p.pickup_data?.pickup === 'done';
+            const isDropped = p.dropoff_data?.drop === 'done';
+
+            let statusHtml = '';
+            if (isDropped) {
+                statusHtml = `<span class="status-badge-premium bg-info text-dark bg-opacity-10"><i class="bi bi-geo-fill"></i> Dropped</span>`;
+            } else if (isPicked) {
+                statusHtml = `<span class="status-badge-premium bg-success text-success bg-opacity-10"><i class="bi bi-person-check-fill"></i> Onboard</span>`;
+            } else {
+                statusHtml = `<span class="status-badge-premium bg-warning text-warning bg-opacity-10"><i class="bi bi-clock"></i> Waiting</span>`;
+            }
+
+            return `
+                <div class="passenger-item-v2 d-flex align-items-center gap-3">
+                    <div class="passenger-avatar-v2">
+                        ${p.photo ? `<img src="${p.photo}" class="w-100 h-100 object-fit-cover">` : p.name[0]}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <span class="fw-bold text-dark">${p.name}</span>
+                            ${statusHtml}
+                        </div>
+                        <div class="text-muted small">
+                            ${p.pickup?.split(',')[0]} → ${p.drop?.split(',')[0]}
+                        </div>
+                    </div>
+                </div>`;
+        }).join('') || '<div class="text-center py-4 text-muted small">Synchronizing participants...</div>';
+    }
+
+    function startLocationTracking() {
+        setInterval(async () => {
+            navigator.geolocation.getCurrentPosition(pos => {
+                fetch(routes['update_location_api'], {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                    body: JSON.stringify({ latitude: pos.coords.latitude, longitude: pos.coords.longitude })
+                });
+            });
+        }, 10000);
+    }
+</script>
+{% endblock %}

@@ -11,6 +11,7 @@ let appState = {
     currentLocation: null,
     users: []
 };
+window.appState = appState;
 
 const defaultConfig = {
     app_title: 'RideBuddy'
@@ -21,6 +22,25 @@ let locationWatchId = null;
 let lastGeocodedPos = null;
 let searchTimeout = null;
 let deferredPrompt = null;
+
+async function switchToRole(role) {
+    if (typeof showToast !== 'undefined') showToast(`Switching to ${role} account...`, "info");
+    try {
+        const response = await fetch(routes['switch_role_api'], {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+            body: JSON.stringify({ role: role })
+        });
+        const data = await response.json();
+        if (data.success) {
+            window.location.href = data.redirect_url;
+        } else if (typeof showToast !== 'undefined') {
+            showToast(data.message, "error");
+        }
+    } catch (e) {
+        if (typeof showToast !== 'undefined') showToast("Switch failed. Please try again.", "error");
+    }
+}
 
 // ==========================================
 // PWA INSTALL LOGIC
@@ -36,7 +56,22 @@ window.addEventListener('beforeinstallprompt', (e) => {
 
 function showInstallBanner() {
     const banner = document.getElementById('pwaInstallBanner');
-    if (banner) banner.classList.remove('d-none');
+    if (banner) {
+        banner.classList.remove('d-none');
+
+        const title = document.getElementById('pwaInstallTitle');
+        const btn = document.getElementById('pwaInstallBtn');
+
+        // Simple regex for mobile detection
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (title) {
+            title.textContent = isMobile ? 'RideBuddy for Mobile' : 'RideBuddy for Desktop';
+        }
+        if (btn) {
+            btn.textContent = isMobile ? 'Add to Home' : 'Install App';
+        }
+    }
 }
 
 async function installApp() {
@@ -146,11 +181,22 @@ function showToast(message, type = 'success') {
 let routes = {};
 
 // Page Navigation
-function navigateTo(page) {
+function navigateTo(pageWithParams) {
     saveState();
+
+    // Split query params if present
+    const [page, params] = pageWithParams.split('?');
+    const queryStr = params ? '?' + params : '';
+
     // If it's a known route, use it. Otherwise, assume it's a path.
-    const url = routes[page] || (page.startsWith('/') ? page : '/' + page + '/');
-    window.location.href = url;
+    let baseUrl = routes[page] || (page.startsWith('/') ? page : '/' + page + '/');
+
+    // Ensure baseUrl ends with / if it doesn't have a file extension
+    if (!baseUrl.includes('.') && !baseUrl.endsWith('/')) {
+        baseUrl += '/';
+    }
+
+    window.location.href = baseUrl + queryStr;
 }
 
 function showPage(pageId) {
@@ -363,6 +409,8 @@ async function handleCreateAccount(event) {
 // 4. LOCATION SERVICES
 // ==========================================
 
+let locationUpdateInterval = null;
+
 // Geolocation Tracking
 function initLocationTracking() {
     if (!navigator.geolocation) {
@@ -373,8 +421,13 @@ function initLocationTracking() {
     if (locationWatchId) {
         navigator.geolocation.clearWatch(locationWatchId);
     }
+    if (locationUpdateInterval) {
+        clearInterval(locationUpdateInterval);
+    }
 
     const options = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+
+    console.log("Starting location tracking...");
 
     locationWatchId = navigator.geolocation.watchPosition(
         (pos) => {
@@ -387,16 +440,46 @@ function initLocationTracking() {
                 lastGeocodedPos = { lat: latitude, lng: longitude };
                 updateLocationName(latitude, longitude);
             }
+
+            // Send first location immediately if we just started
+            if (!locationUpdateInterval && appState.isLoggedIn) {
+                sendLocationToBackend(latitude, longitude);
+            }
         },
         (err) => {
+            console.error("Location error:", err);
             if (err.code === 1 || err.code === 2) {
-                showToast("Location is OFF. Please turn ON GPS.", "warning");
+                showToast("Location access denied or GPS off.", "warning");
                 appState.currentLocation = null;
                 saveState();
             }
         },
         options
     );
+
+    // Setup periodic backend update every 5 seconds
+    locationUpdateInterval = setInterval(async () => {
+        if (appState.isLoggedIn && appState.currentLocation) {
+            sendLocationToBackend(appState.currentLocation.lat, appState.currentLocation.lng);
+        }
+    }, CONFIG.LOCATION_SYNC_INTERVAL || 5000);
+
+}
+
+async function sendLocationToBackend(lat, lng) {
+    if (!routes['update_location_api']) return;
+
+    try {
+        const response = await window.RideBuddyAPI.call(routes['update_location_api'], 'POST', {
+            latitude: lat,
+            longitude: lng
+        });
+        if (response.success) {
+            console.log("Location synced with server.");
+        }
+    } catch (err) {
+        console.warn('Silent location update failure:', err);
+    }
 }
 
 // Convert Lat/Lng to human-readable address
@@ -421,6 +504,11 @@ async function updateLocationName(lat, lng) {
 
             if (pickupInput && (pickupInput.value === "Locating..." || pickupInput.value === "Current Location" || !pickupInput.value)) {
                 pickupInput.value = locationName || data.display_name.split(',')[0];
+
+                // SAVE coordinates so it can be used for ride searching
+                localStorage.setItem('pickupLat', lat);
+                localStorage.setItem('pickupLng', lng);
+
                 validateRideSearch();
             }
         }
@@ -460,31 +548,59 @@ function updateProfileDisplays() {
             if (nameDisp) nameDisp.textContent = appState.currentUser.name || 'Student';
 
             const avatarSmall = document.getElementById('studentAvatarSmall');
-            if (avatarSmall) avatarSmall.textContent = initial;
+            if (avatarSmall) {
+                if (appState.currentUser.profile_pic) {
+                    avatarSmall.innerHTML = `<img src="${appState.currentUser.profile_pic}" class="w-100 h-100 object-fit-cover rounded-circle" alt="Profile">`;
+                    avatarSmall.classList.add('p-0', 'overflow-hidden');
+                } else {
+                    avatarSmall.textContent = initial;
+                }
+            }
 
             const profAvatar = document.getElementById('studentProfileAvatar');
-            if (profAvatar) profAvatar.textContent = initial;
+            if (profAvatar) {
+                if (appState.currentUser.profile_pic) {
+                    profAvatar.innerHTML = `<img src="${appState.currentUser.profile_pic}" class="w-100 h-100 object-fit-cover rounded-circle" alt="Profile">`;
+                    profAvatar.classList.add('p-0', 'overflow-hidden');
+                } else {
+                    profAvatar.textContent = initial;
+                }
+            }
 
             const profName = document.getElementById('studentProfileName');
             if (profName) profName.textContent = appState.currentUser.name || 'Student Name';
 
             const profId = document.getElementById('studentProfileId');
-            if (profId) profId.textContent = 'Member ID: ' + (appState.currentUser.iub_id || 'N/A');
+            if (profId) profId.textContent = 'Member ID: ' + (appState.currentUser.username || 'N/A');
         } else {
             const nameDisp = document.getElementById('riderNameDisplay');
             if (nameDisp) nameDisp.textContent = appState.currentUser.name || 'Rider';
 
             const avatarSmall = document.getElementById('riderAvatarSmall');
-            if (avatarSmall) avatarSmall.textContent = initial;
+            if (avatarSmall) {
+                if (appState.currentUser.profile_pic) {
+                    avatarSmall.innerHTML = `<img src="${appState.currentUser.profile_pic}" class="w-100 h-100 object-fit-cover rounded-circle" alt="Profile">`;
+                    avatarSmall.classList.add('p-0', 'overflow-hidden');
+                } else {
+                    avatarSmall.textContent = initial;
+                }
+            }
 
             const profAvatar = document.getElementById('riderProfileAvatar');
-            if (profAvatar) profAvatar.textContent = initial;
+            if (profAvatar) {
+                if (appState.currentUser.profile_pic) {
+                    profAvatar.innerHTML = `<img src="${appState.currentUser.profile_pic}" class="w-100 h-100 object-fit-cover rounded-circle" alt="Profile">`;
+                    profAvatar.classList.add('p-0', 'overflow-hidden');
+                } else {
+                    profAvatar.textContent = initial;
+                }
+            }
 
             const profName = document.getElementById('riderProfileName');
             if (profName) profName.textContent = appState.currentUser.name || 'Rider Name';
 
             const profLic = document.getElementById('riderProfileLicence');
-            if (profLic) profLic.textContent = 'License: ' + (appState.currentUser.licence_no || 'N/A');
+            if (profLic) profLic.textContent = 'License: ' + (appState.currentUser.username || 'N/A');
         }
     }
 }
@@ -498,7 +614,7 @@ function switchNavTab(tab) {
     if (tab === 'home') navigateTo(appState.userType === 'student' ? 'home_student' : 'home_rider');
     else if (tab === 'activity') navigateTo(appState.userType === 'student' ? 'activity_student' : 'activity_rider');
     else if (tab === 'history') navigateTo(appState.userType === 'student' ? 'history_student' : 'history_rider');
-    else if (tab === 'account') navigateTo(appState.userType === 'student' ? 'account_student' : 'account_rider');
+    else if (tab === 'account') navigateTo('account');
 }
 
 // Show Student Page
@@ -512,7 +628,7 @@ function showStudentPage(page) {
         'activity': 'activity_student',
         'history': 'history_student',
         'individualHistory': 'individual_history_student',
-        'account': 'account_student'
+        'account': 'account'
     };
     if (pageMap[page]) navigateTo(pageMap[page]);
 }
@@ -525,7 +641,7 @@ function showRiderPage(page) {
         'activity': 'activity_rider',
         'history': 'history_rider',
         'individualHistory': 'individual_history_rider',
-        'account': 'account_rider'
+        'account': 'account'
     };
     if (pageMap[page]) navigateTo(pageMap[page]);
 }
@@ -539,12 +655,40 @@ function selectRideType(type, element) {
     validateRideSearch();
 }
 
-function cancelSearch() {
-    appState.isWaiting = false;
-    appState.rideStatus = null;
-    saveState();
-    showToast('Ride request cancelled.', 'info');
-    navigateTo('home_student');
+async function cancelSearch() {
+    const bookingId = appState.currentBookingId;
+    if (!bookingId) {
+        navigateTo('home_student');
+        return;
+    }
+
+    if (!confirm("Are you sure you want to cancel your ride request?")) return;
+
+    showToast('Cancelling request...', 'info');
+    try {
+        const response = await window.RideBuddyAPI.call(routes['cancel_activity_api'], 'POST', {
+            id: bookingId,
+            type: 'searching' // Or 'riding', the backend handles both for bookings
+        });
+
+        if (response.success) {
+            appState.isWaiting = false;
+            appState.currentBookingId = null;
+            appState.rideStatus = null;
+            saveState();
+            showToast('Ride request cancelled.', 'success');
+            navigateTo('home_student');
+        } else {
+            showToast(response.message || 'Failed to cancel', 'error');
+        }
+    } catch (err) {
+        console.error('Cancel Error:', err);
+        showToast('Connection error during cancellation', 'error');
+        // Fallback: still go home if user is stuck
+        appState.isWaiting = false;
+        saveState();
+        navigateTo('home_student');
+    }
 }
 
 function applyGenderFilter() {
@@ -574,12 +718,41 @@ function showFilterModal() {
     modal.show();
 }
 
+// Toggle between Ride Now and Schedule
+function toggleScheduleMode(isScheduled) {
+    appState.isScheduled = isScheduled;
+    const nowTab = document.getElementById('rideNowTab');
+    const scheduleTab = document.getElementById('scheduleTab');
+    const scheduleOptions = document.getElementById('scheduleOptions');
+
+    if (isScheduled) {
+        nowTab.classList.remove('active-tab');
+        nowTab.classList.add('text-muted');
+        scheduleTab.classList.add('active-tab');
+        scheduleTab.classList.remove('text-muted');
+        scheduleOptions.classList.remove('d-none');
+
+        // Default to current time + 5 mins
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 5);
+        document.getElementById('scheduledStartTime').value = now.toISOString().slice(0, 16);
+    } else {
+        nowTab.classList.add('active-tab');
+        nowTab.classList.remove('text-muted');
+        scheduleTab.classList.remove('active-tab');
+        scheduleTab.classList.add('text-muted');
+        scheduleOptions.classList.add('d-none');
+    }
+    saveState();
+}
+
 // Go to Ride Page
-function goToRidePage() {
+async function goToRidePage() {
     const pickupInput = document.getElementById('pickupLocation');
     const dropInput = document.getElementById('dropLocation');
+    const findBtn = document.getElementById('findRidesBtn');
 
-    if (!pickupInput || !dropInput) return;
+    if (!pickupInput || !dropInput || !findBtn) return;
 
     const pickup = pickupInput.value.trim();
     const drop = dropInput.value.trim();
@@ -589,12 +762,89 @@ function goToRidePage() {
         return;
     }
 
-    // Save to localStorage so ride_student.html can pick it up
-    localStorage.setItem('pickupLoc', pickup);
-    localStorage.setItem('dropLoc', drop);
-    saveState();
+    const pLat = localStorage.getItem('pickupLat');
+    const pLng = localStorage.getItem('pickupLng');
+    const dLat = localStorage.getItem('dropLat');
+    const dLng = localStorage.getItem('dropLng');
 
-    navigateTo('ride_student');
+    console.log("Searching with coordinates:", { pLat, pLng, dLat, dLng, rideType: appState.selectedRideType });
+
+    if (!pLat || !pLng) {
+        showToast('Please select a valid pickup location from the list', 'warning');
+        return;
+    }
+    if (!dLat || !dLng) {
+        showToast('Please select a destination from the list', 'warning');
+        return;
+    }
+
+    const originalBtnHTML = findBtn.innerHTML;
+    findBtn.disabled = true;
+    findBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Finding Route...';
+
+    try {
+        console.log("1. Starting OSRM Route Fetch...");
+        const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${pLng},${pLat};${dLng},${dLat}?overview=full&geometries=geojson`;
+        const osrmResponse = await fetch(osrmUrl);
+        const osrmData = await osrmResponse.json();
+
+        if (osrmData.code !== 'Ok') {
+            console.error("OSRM Error:", osrmData);
+            throw new Error('OSRM Route service is currently busy. Try again soon.');
+        }
+
+        const firstRoute = osrmData.routes[0];
+        const osrmWaypoints = firstRoute.geometry.coordinates;
+        const distanceKm = firstRoute.distance / 1000;
+        console.log("2. Route calculated:", { distanceKm, waypointsCount: osrmWaypoints.length });
+
+        // 2. Create Booking via API
+        const bookingData = {
+            pickup_name: pickup,
+            drop_name: drop,
+            pickup_lat: parseFloat(pLat),
+            pickup_lng: parseFloat(pLng),
+            drop_lat: parseFloat(dLat),
+            drop_lng: parseFloat(dLng),
+            waypoints: osrmWaypoints,
+            distance: distanceKm,
+            ride_type: appState.selectedRideType,
+            preference: { gender: appState.genderFilter || 'any' },
+            booking_type: appState.isScheduled ? 'schedule' : 'instant',
+            scheduled_start: appState.isScheduled ? document.getElementById('scheduledStartTime').value : null,
+            waiting_threshold: appState.isScheduled ? document.getElementById('waitingThreshold').value : 15
+        };
+
+        console.log("3. Calling Create Booking API...", bookingData);
+        const result = await window.RideBuddyAPI.call(routes['create_booking_api'], 'POST', bookingData);
+        console.log("4. API Result:", result);
+
+        if (result.success) {
+            showToast('Ride Request Broadcasted!', 'success');
+
+            // Save current request status to state
+            appState.isWaiting = true;
+            appState.currentBookingId = result.booking_id;
+            appState.rideStatus = 'searching';
+            saveState();
+            localStorage.setItem('last_booking_id', result.booking_id);
+
+            // Store for ride_student display
+            localStorage.setItem('pickupLoc', pickup);
+            localStorage.setItem('dropLoc', drop);
+
+            console.log("5. Navigating to ride_student page...");
+            setTimeout(() => navigateTo('ride_student'), 500);
+        } else {
+            throw new Error(result.message || 'Booking failed');
+        }
+
+    } catch (err) {
+        console.error('Ride Search Error:', err);
+        showToast(err.message, 'error');
+        findBtn.disabled = false;
+        findBtn.innerHTML = originalBtnHTML;
+    }
 }
 
 // Validate Ride Search Form
@@ -605,8 +855,13 @@ function validateRideSearch() {
 
     if (!pickupInput || !dropInput || !findBtn) return;
 
-    const isPickupFilled = pickupInput.value.trim().length > 0;
-    const isDropFilled = dropInput.value.trim().length > 0;
+    const pLat = localStorage.getItem('pickupLat');
+    const pLng = localStorage.getItem('pickupLng');
+    const dLat = localStorage.getItem('dropLat');
+    const dLng = localStorage.getItem('dropLng');
+
+    const isPickupFilled = pickupInput.value.trim().length > 0 && pLat && pLng;
+    const isDropFilled = dropInput.value.trim().length > 0 && dLat && dLng;
     const isTypeSelected = appState.selectedRideType !== null;
 
     if (isPickupFilled && isDropFilled && isTypeSelected) {
@@ -785,23 +1040,42 @@ function showFilterModal() {
     showToast('Filter options coming soon!', 'info');
 }
 
-function handleLogout() {
+async function handleLogout() {
     if (locationWatchId) {
         navigator.geolocation.clearWatch(locationWatchId);
         locationWatchId = null;
     }
+    if (locationUpdateInterval) {
+        clearInterval(locationUpdateInterval);
+        locationUpdateInterval = null;
+    }
+
+    try {
+        await window.RideBuddyAPI.call(routes['logout_api'], 'POST');
+    } catch (err) {
+        console.warn('Backend logout failed or was already logged out:', err);
+    }
+
     appState.isLoggedIn = false;
     appState.userType = null;
     appState.currentUser = null;
     localStorage.removeItem('rideBuddyState');
-    navigateTo('index');
+    navigateTo('login');
 }
 
 // Debounce helper for search
 function debounceSearch(query, resultId) {
     clearTimeout(searchTimeout);
+
+    // Invalidate existing coordinates if user is typing
+    const type = resultId.includes('pickup') ? 'pickup' : 'drop';
+    localStorage.removeItem(`${type}Lat`);
+    localStorage.removeItem(`${type}Lng`);
+
     if (!query || query.length < 3) {
-        document.getElementById(resultId).classList.add('d-none');
+        const container = document.getElementById(resultId);
+        if (container) container.classList.add('d-none');
+        validateRideSearch();
         return;
     }
     searchTimeout = setTimeout(() => fetchSuggestions(query, resultId), 500);

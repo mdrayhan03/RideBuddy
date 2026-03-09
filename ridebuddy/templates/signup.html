@@ -3,6 +3,8 @@
 
 {% block title %}Create Account - RideBuddy{% endblock %}
 
+{% block bottom_nav %}{% endblock %}
+
 {% block extra_css %}
 <style>
     .camera-container {
@@ -132,6 +134,22 @@
             transform: translateY(0);
         }
     }
+    .otp-input {
+        width: 45px;
+        height: 55px;
+        text-align: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        border-radius: 12px;
+        border: 2px solid #e2e8f0;
+        transition: all 0.3s;
+    }
+
+    .otp-input:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        outline: none;
+    }
 </style>
 {% endblock %}
 
@@ -156,6 +174,7 @@
                 </div>
 
                 <form id="unifiedSignupForm" onsubmit="handleUnifiedSignup(event)">
+                    {% csrf_token %}
                     <!-- Step 1: Basic Student Info -->
                     <div class="form-step active" id="step1">
                         <div class="form-section">
@@ -181,10 +200,33 @@
                                         placeholder="Enter Member ID" required>
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label fw-500 small">Alternative Email <span
+                                    <label class="form-label fw-500 small">Community <span
                                             class="text-danger">*</span></label>
+                                    <select class="form-select input-custom" id="regCommunity" required>
+                                        <option value="" disabled selected>Select Community</option>
+                                        {% for community in communities %}
+                                        <option value="{{ community.id }}">
+                                            {{ community.name }} ({{ community.short_name}})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Official Email <span
+                                            class="text-danger">*</span></label>
+                                    <input type="email" class="form-control input-custom" id="regEmail"
+                                        placeholder="institutional@email.edu" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Phone Number <span
+                                            class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control input-custom" id="regPhone"
+                                        placeholder="01XXXXXXXXX" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Alternative Email</label>
                                     <input type="email" class="form-control input-custom" id="regAltEmail"
-                                        placeholder="personal@email.com" required>
+                                        placeholder="personal@email.com">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-500 small">Emergency Number <span
@@ -315,6 +357,16 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="col-12 text-center mt-3">
+                                        <p class="small fw-bold mb-3">Vehicle Tax Token <span class="text-danger">*</span></p>
+                                        <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('tax_token')">
+                                            <i class="bi bi-file-earmark-medical fs-2 text-muted" id="taxTokenIcon"></i>
+                                            <img id="taxTokenPreview" class="captured-preview">
+                                        </div>
+                                        <input type="hidden" id="taxTokenData">
+                                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                            onclick="openCamera('tax_token')">Capture Tax Token</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -341,6 +393,12 @@
                                             class="text-danger">*</span></label>
                                     <input type="email" class="form-control input-custom" id="riderEmail"
                                         placeholder="rider@email.com">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-500 small">Rider Phone No <span
+                                            class="text-danger">*</span></label>
+                                    <input type="tel" class="form-control input-custom" id="riderPhone"
+                                        placeholder="01XXXXXXXXX">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label fw-500 small">Emergency Contact No <span
@@ -395,6 +453,29 @@
                             </button>
                         </div>
                     </div>
+                    <!-- Step 3: Verification (OTP) -->
+                    <div class="form-step d-none" id="step_verification">
+                        <div class="text-center mb-4">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                <i class="bi bi-shield-check fs-1"></i>
+                            </div>
+                            <h4 class="fw-bold">Verify Your Email</h4>
+                            <p class="text-muted small">We've sent a 6-digit code to <span id="displayEmail" class="fw-bold text-dark">your email</span>. Please enter it below.</p>
+                        </div>
+
+                        <div class="otp-container d-flex justify-content-between gap-1 mb-4 mx-auto" style="max-width: 320px;">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control otp-input" onkeyup="moveFocus(this, event)" id="otp1">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control otp-input" onkeyup="moveFocus(this, event)" id="otp2">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control otp-input" onkeyup="moveFocus(this, event)" id="otp3">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control otp-input" onkeyup="moveFocus(this, event)" id="otp4">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control otp-input" onkeyup="moveFocus(this, event)" id="otp5">
+                            <input type="text" inputmode="numeric" maxlength="1" class="form-control otp-input" onkeyup="moveFocus(this, event)" id="otp6">
+                        </div>
+
+                        <button type="button" class="btn btn-primary-custom w-100 py-3 rounded-4 fw-bold shadow-sm" id="verifyOtpBtn" onclick="handleVerifyOTP()">
+                            Verify & Complete <i class="bi bi-check-circle-fill ms-2"></i>
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
@@ -444,6 +525,7 @@
     let cameraModal;
     let video;
     let canvas;
+    let pendingUsername = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
@@ -458,10 +540,25 @@
         });
         const activeStep = document.getElementById('step' + step);
         activeStep.style.display = 'block';
+        activeStep.classList.remove('d-none');
         setTimeout(() => activeStep.classList.add('active'), 10);
 
         document.getElementById('regProgress').style.width = (step === 1 ? '50%' : '100%');
         window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function moveFocus(current, event) {
+        if (event.key >= 0 && event.key <= 9) {
+            const next = current.nextElementSibling;
+            if (next && next.classList.contains('otp-input')) {
+                next.focus();
+            }
+        } else if (event.key === 'Backspace') {
+            const prev = current.previousElementSibling;
+            if (prev && prev.classList.contains('otp-input')) {
+                prev.focus();
+            }
+        }
     }
 
     function handleVehicleTypeChange(type) {
@@ -528,7 +625,7 @@
         currentCaptureType = type;
 
         // Use back camera for documents, front camera for profile initially
-        currentFacingMode = (type === 'idcard' || type === 'license') ? 'environment' : 'user';
+        currentFacingMode = (type === 'idcard' || type === 'license' || type === 'tax_token') ? 'environment' : 'user';
         await startCameraStream();
     }
 
@@ -582,7 +679,8 @@
             'profile': { preview: 'profilePicPreview', icon: 'profilePicIcon', input: 'profilePicData' },
             'idcard': { preview: 'idCardPreview', icon: 'idCardIcon', input: 'idCardData' },
             'rider_profile': { preview: 'riderProfilePreview', icon: 'riderProfileIcon', input: 'riderProfileData' },
-            'license': { preview: 'licensePreview', icon: 'licenseIcon', input: 'licenseData' }
+            'license': { preview: 'licensePreview', icon: 'licenseIcon', input: 'licenseData' },
+            'tax_token': { preview: 'taxTokenPreview', icon: 'taxTokenIcon', input: 'taxTokenData' }
         };
 
         const target = previewMap[currentCaptureType];
@@ -608,12 +706,16 @@
 
         const btn = document.getElementById('createAccountBtn');
         btn.disabled = true;
+        const originalBtnHTML = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Securing Account...';
 
         const data = {
             iub_id: document.getElementById('regIubId').value,
+            community: document.getElementById('regCommunity').value,
             first_name: document.getElementById('regFirstName').value,
             last_name: document.getElementById('regLastName').value,
+            email: document.getElementById('regEmail').value,
+            phone_no: document.getElementById('regPhone').value,
             alt_email: document.getElementById('regAltEmail').value,
             emergency_phone: document.getElementById('regEmergencyPhone').value,
             password: document.getElementById('regPassword').value,
@@ -623,10 +725,17 @@
         };
 
         // Basic Validation
+        if (!data.community) {
+            showToast("Please select your community", "warning");
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHTML;
+            return;
+        }
+
         if (!data.profile_pic || !data.id_card_pic) {
             showToast("Please capture profile and ID card photos", "warning");
             btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+            btn.innerHTML = originalBtnHTML;
             return;
         }
 
@@ -634,44 +743,55 @@
             const carModel = document.getElementById('carModel').value;
             const carNumber = document.getElementById('carNumber').value;
             const carSeats = document.getElementById('carSeats').value;
+            const vehicleType = document.querySelector('input[name="vehicleExtType"]:checked').value;
             const driveType = document.querySelector('input[name="driveType"]:checked').value;
 
             if (!carModel || !carNumber || !carSeats) {
                 showToast("Please fill in car details", "warning");
                 btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                btn.innerHTML = originalBtnHTML;
                 return;
             }
 
+            data.vehicle_type = vehicleType;
             data.car_info = {
                 model: carModel,
                 car_no: carNumber,
                 total_seats: carSeats,
-                drive_type: driveType
+                drive_type: driveType,
+                tax_token: document.getElementById('taxTokenData').value
             };
+            
+            if (!data.car_info.tax_token) {
+                showToast("Please capture vehicle tax token photo", "warning");
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHTML;
+                return;
+            }
 
             if (driveType === 'driver') {
                 data.rider_info = {
                     first_name: document.getElementById('riderFirstName').value,
                     last_name: document.getElementById('riderLastName').value,
                     email: document.getElementById('riderEmail').value,
+                    phone_no: document.getElementById('riderPhone').value,
                     emergency_no: document.getElementById('riderEmergency').value,
                     license_no: document.getElementById('riderLicense').value,
                     profile_pic: document.getElementById('riderProfileData').value,
                     license_pic: document.getElementById('licenseData').value
                 };
 
-                if (!data.rider_info.first_name || !data.rider_info.last_name || !data.rider_info.email || !data.rider_info.emergency_no || !data.rider_info.license_no) {
+                if (!data.rider_info.first_name || !data.rider_info.last_name || !data.rider_info.email || !data.rider_info.phone_no || !data.rider_info.emergency_no || !data.rider_info.license_no) {
                     showToast("Please fill in rider details and license info", "warning");
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                    btn.innerHTML = originalBtnHTML;
                     return;
                 }
 
                 if (!data.rider_info.profile_pic || !data.rider_info.license_pic) {
                     showToast("Please capture rider profile and license photos", "warning");
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                    btn.innerHTML = originalBtnHTML;
                     return;
                 }
             } else {
@@ -684,30 +804,78 @@
                 if (!data.student_license.no || !data.student_license.pic) {
                     showToast("Please provide your license number and photo", "warning");
                     btn.disabled = false;
-                    btn.innerHTML = '<i class="bi bi-person-plus me-2"></i>Create Account';
+                    btn.innerHTML = originalBtnHTML;
                     return;
                 }
             }
         }
 
-        // Simulate creation
-        setTimeout(() => {
-            if (typeof appState !== 'undefined') {
-                appState.isLoggedIn = true;
-                appState.userType = 'student';
-                appState.currentUser = {
-                    name: "Community Member",
-                    iub_id: data.iub_id,
-                    email: data.alt_email,
-                    type: 'student',
-                    has_car: data.has_car,
-                    drive_type: data.has_car ? data.car_info.drive_type : null
-                };
-                saveState();
-                showToast("Welcome to RideBuddy!", "success");
-                setTimeout(() => window.location.href = routes['home_student'], 1000);
+        try {
+            // CALL BACKEND API
+            const response = await window.RideBuddyAPI.call(routes['signup_api'], 'POST', data);
+
+            if (response.success) {
+                showToast(response.message, "success");
+                
+                // Switch to Verification Step
+                pendingUsername = response.username;
+                document.getElementById('displayEmail').innerText = document.getElementById('regEmail').value;
+                
+                document.querySelectorAll('.form-step').forEach(s => {
+                    s.classList.add('d-none');
+                    s.classList.remove('active');
+                });
+                
+                const verifyStep = document.getElementById('step_verification');
+                verifyStep.classList.remove('d-none');
+                verifyStep.style.display = 'block';
+                setTimeout(() => verifyStep.classList.add('active'), 10);
+                
+                document.getElementById('regProgress').style.width = '100%';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else {
+                throw new Error(response.message || "Signup failed");
             }
-        }, 1500);
+        } catch (err) {
+            showToast(err.message, "error");
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHTML;
+        }
+    }
+
+    async function handleVerifyOTP() {
+        const otp = ['1', '2', '3', '4', '5', '6'].map(i => document.getElementById('otp' + i).value).join('');
+        if (otp.length < 6) {
+            showToast("Please enter the 6-digit code", "warning");
+            return;
+        }
+
+        const btn = document.getElementById('verifyOtpBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+
+        try {
+            const response = await fetch("{% url 'accounts:verify_otp_api' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ username: pendingUsername, otp: otp })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showToast("Email verified! Welcome to RideBuddy.", "success");
+                setTimeout(() => window.location.href = result.redirect_url, 1500);
+            } else {
+                throw new Error(result.message || "Verification failed");
+            }
+        } catch (err) {
+            showToast(err.message, "error");
+            btn.disabled = false;
+            btn.innerHTML = 'Verify & Complete <i class="bi bi-check-circle-fill ms-2"></i>';
+        }
     }
 </script>
 {% endblock %}

@@ -3,6 +3,8 @@
 
 {% block title %}Login - RideBuddy{% endblock %}
 
+{% block bottom_nav %}{% endblock %}
+
 {% block content %}
 <div id="authPages">
     <div class="page active" id="loginPage">
@@ -25,26 +27,35 @@
                 </div>
 
                 <form id="loginForm" onsubmit="handleLogin(event)">
+                    {% csrf_token %}
                     <!-- Dynamic Identity Fields -->
-                    <div class="mb-3" id="studentLoginField">
-                        <label class="form-label fw-500">Member ID</label>
-                        <input type="text" class="form-control input-custom" id="loginIubId"
-                            placeholder="Enter Member ID">
-                    </div>
-                    <div class="mb-3 d-none" id="riderLoginField">
-                        <label class="form-label fw-500">License Number</label>
-                        <input type="text" class="form-control input-custom" id="loginLicenceNo"
-                            placeholder="Enter license number">
+                    <div class="mb-3">
+                        <label class="form-label fw-500">Identity <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control input-custom" id="loginIdentifier"
+                            placeholder="Username or Email">
+                        <div class="form-text mt-1 small">Use your Student ID or Registered Email.</div>
                     </div>
 
                     <!-- Shared Password Field -->
                     <div class="mb-3">
-                        <label class="form-label fw-500">Password</label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label class="form-label fw-500 mb-0">Password</label>
+                            <a href="{% url 'password_reset' %}" class="small text-primary text-decoration-none">Forgot Password?</a>
+                        </div>
                         <div class="position-relative">
                             <input type="password" class="form-control input-custom" id="loginPassword"
                                 placeholder="••••••••">
                             <i class="bi bi-eye-slash position-absolute top-50 end-0 translate-middle-y me-3 text-muted cursor-pointer"
                                 onclick="togglePassword('loginPassword', this)"></i>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 d-flex align-items-center justify-content-between">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="rememberMe">
+                            <label class="form-check-label small text-muted" for="rememberMe">
+                                Remember Me
+                            </label>
                         </div>
                     </div>
 
@@ -63,4 +74,82 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function selectLoginType(type, element) {
+        // Update visual active state
+        document.querySelectorAll('.user-type-btn').forEach(btn => btn.classList.remove('active'));
+        element.classList.add('active');
+
+        // Update placeholder to match selection context
+        const input = document.getElementById('loginIdentifier');
+        if (type === 'student') {
+            input.placeholder = "Enter Student ID or Email";
+        } else {
+            input.placeholder = "Enter Rider Username or Email";
+        }
+    }
+
+    async function handleLogin(event) {
+        event.preventDefault();
+
+        const btn = event.target.querySelector('button[type="submit"]');
+        const originalBtnHTML = btn.innerHTML;
+
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Logging in...';
+
+        const identifier = document.getElementById('loginIdentifier').value;
+        const password = document.getElementById('loginPassword').value;
+        const rememberMe = document.getElementById('rememberMe').checked;
+
+        if (!identifier || !password) {
+            showToast("Please fill in all fields", "warning");
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHTML;
+            return;
+        }
+
+        try {
+            const response = await window.RideBuddyAPI.call(routes['login_api'], 'POST', {
+                username: identifier, // Still sent as 'username' to the backend
+                password: password,
+                remember_me: rememberMe
+            });
+
+            if (response.success) {
+                showToast(response.message, "success");
+
+                // Update local appState for PWA feel
+                if (typeof appState !== 'undefined') {
+                    appState.isLoggedIn = true;
+                    appState.userType = response.redirect_url.includes('student') ? 'student' : 'rider';
+                    appState.currentUser = response.user;
+                    saveState();
+                }
+
+                setTimeout(() => window.location.href = response.redirect_url, 1000);
+            } else {
+                throw new Error(response.message || "Login failed");
+            }
+        } catch (err) {
+            showToast(err.message, "error");
+            btn.disabled = false;
+            btn.innerHTML = originalBtnHTML;
+        }
+    }
+
+    function togglePassword(inputId, icon) {
+        const input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('bi-eye-slash', 'bi-eye');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('bi-eye', 'bi-eye-slash');
+        }
+    }
+</script>
 {% endblock %}

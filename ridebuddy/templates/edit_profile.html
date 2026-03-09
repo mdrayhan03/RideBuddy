@@ -1,0 +1,583 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Edit Profile - RideBuddy{% endblock %}
+
+{% block extra_css %}
+<style>
+    .camera-container {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        aspect-ratio: 4/3;
+        background: #000;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 0 auto;
+    }
+
+    #cameraVideo {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .camera-overlay {
+        position: absolute;
+        bottom: 20px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+    }
+
+    .image-upload {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 2px dashed #d1d5db;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        background: #f9fafb;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .image-upload:hover {
+        border-color: var(--primary-color);
+        background: #eff6ff;
+    }
+
+    .image-upload.card-upload {
+        width: 100%;
+        max-width: 280px;
+        height: 160px;
+        border-radius: 16px;
+    }
+
+    .captured-preview {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .camera-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: white;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="main-content p-4">
+    <div class="d-flex align-items-center mb-4">
+        <a href="{% url 'accounts:settings' %}" class="btn btn-link p-0 me-3 text-dark">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <h5 class="mb-0 fw-bold">Edit Profile</h5>
+    </div>
+
+    <form id="editProfileForm" onsubmit="handleUpdateProfile(event)">
+        <!-- Profile Picture & ID Card -->
+        <div class="form-section-title"><i class="bi bi-person-lines-fill me-2"></i>Personal Information</div>
+        <div class="card-custom p-3 mb-4">
+            <div class="row g-4">
+                <div class="col-md-6 text-center border-end">
+                    <p class="small fw-bold mb-2">Profile Picture</p>
+                    <div class="image-upload mx-auto mb-3" onclick="openCamera('profile')">
+                        {% if user.profile_picture %}
+                        <img id="profilePicPreview" src="{{ user.profile_picture.url }}" class="captured-preview">
+                        {% else %}
+                        <i class="bi bi-person-video fs-2 text-muted" id="profilePicIcon"></i>
+                        <img id="profilePicPreview" class="captured-preview" style="display:none;">
+                        {% endif %}
+                    </div>
+                    <input type="hidden" id="profilePicData">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('profile')">Change Photo</button>
+                </div>
+                {% if user.is_student %}
+                <div class="col-md-6 text-center">
+                    <p class="small fw-bold mb-2">Student ID Card</p>
+                    <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('idcard')">
+                        {% if user.student_profile.id_picture %}
+                        <img id="idCardPreview" src="{{ user.student_profile.id_picture.url }}" class="captured-preview">
+                        {% else %}
+                        <i class="bi bi-card-heading fs-2 text-muted" id="idCardIcon"></i>
+                        <img id="idCardPreview" class="captured-preview" style="display:none;">
+                        {% endif %}
+                    </div>
+                    <input type="hidden" id="idCardData">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('idcard')">Update ID Card</button>
+                </div>
+                {% endif %}
+            </div>
+
+            <hr class="my-4">
+
+            <div class="row g-3">
+                {% if user.is_student %}
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Community</label>
+                    <select class="form-select input-custom" id="editCommunity">
+                        {% for community in communities %}
+                        <option value="{{ community.id }}" {% if user.student_profile.community.id == community.id %}selected{% endif %}>
+                            {{ community.name }} ({{ community.short_name }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Member ID</label>
+                    <input type="text" class="form-control input-custom" value="{{ user.student_profile.id_no }}" disabled>
+                </div>
+                {% endif %}
+                <div class="col-6">
+                    <label class="form-label small fw-bold">First Name</label>
+                    <input type="text" class="form-control input-custom" id="editFirstName" value="{{ user.first_name }}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Last Name</label>
+                    <input type="text" class="form-control input-custom" id="editLastName" value="{{ user.last_name }}">
+                </div>
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Official Email</label>
+                    <input type="email" class="form-control input-custom" value="{{ user.email }}" disabled>
+                </div>
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Phone Number</label>
+                    <input type="tel" class="form-control input-custom" id="editPhone" value="{{ user.phone_no }}">
+                </div>
+                {% if user.is_student %}
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Alternative Email</label>
+                    <input type="email" class="form-control input-custom" id="editAltEmail" value="{{ user.student_profile.alternative_email }}">
+                </div>
+                {% endif %}
+                <div class="col-6">
+                    <label class="form-label small fw-bold">Emergency Contact</label>
+                    <input type="tel" class="form-control input-custom" id="editEmergency" value="{{ user.emergency_contact }}">
+                </div>
+            </div>
+        </div>
+
+        {% if user.is_student %}
+        <div class="form-section-title"><i class="bi bi-car-front me-2"></i>Vehicle Settings</div>
+        <div class="card-custom p-3 mb-4">
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="editHasVehicle" {% if user.student_profile.has_vehicle %}checked{% endif %} onchange="toggleVehicleFields(this.checked)">
+                <label class="form-check-label fw-bold" for="editHasVehicle">I have a vehicle</label>
+            </div>
+
+            <div id="vehicleEditFields" class="{% if not user.student_profile.has_vehicle %}d-none{% endif %}">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label small fw-bold">Vehicle Type</label>
+                        <select class="form-select input-custom" id="editVehicleType">
+                            <option value="car" {% if user.student_profile.vehicle.vehicle_type == 'car' %}selected{% endif %}>Car</option>
+                            <option value="bike" {% if user.student_profile.vehicle.vehicle_type == 'bike' %}selected{% endif %}>Bike</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Model</label>
+                        <input type="text" class="form-control input-custom" id="editVehicleModel" value="{{ user.student_profile.vehicle.vehicle_model }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Plate Number</label>
+                        <input type="text" class="form-control input-custom" id="editVehiclePlate" value="{{ user.student_profile.vehicle.vehicle_plate_no }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Total Capacity</label>
+                        <input type="number" class="form-control input-custom" id="editVehicleCapacity" value="{{ user.student_profile.vehicle.capacity }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold">Drive Mode</label>
+                        <select class="form-select input-custom" id="editDriveMode" onchange="toggleRiderFields(this.value)">
+                            <option value="self" {% if user.student_profile.driver_type == 'self_drive' %}selected{% endif %}>Self Drive</option>
+                            <option value="driver" {% if user.student_profile.driver_type == 'has_driver' %}selected{% endif %}>Hired Driver</option>
+                        </select>
+                    </div>
+
+                    <!-- Tax Token Picture -->
+                    <div class="col-12 text-center mt-3">
+                        <p class="small fw-bold mb-2">Vehicle Tax Token</p>
+                        <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('tax_token')">
+                            {% if user.student_profile.vehicle.tax_token_picture %}
+                            <img id="taxTokenPreview" src="{{ user.student_profile.vehicle.tax_token_picture.url }}" class="captured-preview">
+                            {% else %}
+                            <i class="bi bi-file-earmark-medical fs-2 text-muted" id="taxTokenIcon"></i>
+                            <img id="taxTokenPreview" class="captured-preview" style="display:none;">
+                            {% endif %}
+                        </div>
+                        <input type="hidden" id="taxTokenData">
+                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('tax_token')">Update Tax Token</button>
+                    </div>
+
+                    <!-- License Section -->
+                    <div class="col-12 mt-4" id="licenseSection">
+                        <div class="form-section-title small mb-2">Driver verification</div>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">License Number</label>
+                                <input type="text" class="form-control input-custom" id="editLicenseNo" value="{% if user.student_profile.driver_type == 'self_drive' %}{{ user.rider_profile.license_no }}{% else %}{{ user.student_profile.hired_riders.first.license_no }}{% endif %}">
+                            </div>
+                            <div class="col-12 text-center">
+                                <p class="small fw-bold mb-2">License Photo</p>
+                                <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('license')">
+                                    {% if user.student_profile.driver_type == 'self_drive' and user.rider_profile.license_picture %}
+                                    <img id="licensePreview" src="{{ user.rider_profile.license_picture.url }}" class="captured-preview">
+                                    {% elif user.student_profile.driver_type == 'has_driver' and user.student_profile.hired_riders.first.license_picture %}
+                                    <img id="licensePreview" src="{{ user.student_profile.hired_riders.first.license_picture.url }}" class="captured-preview">
+                                    {% else %}
+                                    <i class="bi bi-file-earmark-person fs-2 text-muted" id="licenseIcon"></i>
+                                    <img id="licensePreview" class="captured-preview" style="display:none;">
+                                    {% endif %}
+                                </div>
+                                <input type="hidden" id="licenseData">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('license')">Update License</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hired Rider Section -->
+                    <div class="col-12 mt-4 {% if user.student_profile.driver_type != 'has_driver' %}d-none{% endif %}" id="hiredRiderFields">
+                        <div class="form-section-title small mb-2">Rider Information</div>
+                        <div class="row g-3">
+                            <div class="col-md-6 text-center border-bottom pb-3 mb-3 w-100">
+                                <p class="small fw-bold mb-2">Rider Profile Pic</p>
+                                <div class="image-upload mx-auto mb-3" onclick="openCamera('rider_profile')">
+                                    {% with hired_rider=user.student_profile.hired_riders.first %}
+                                    {% if hired_rider and hired_rider.user.profile_picture %}
+                                    <img id="riderProfilePreview" src="{{ hired_rider.user.profile_picture.url }}" class="captured-preview">
+                                    {% else %}
+                                    <i class="bi bi-person-video2 fs-2 text-muted" id="riderProfileIcon"></i>
+                                    <img id="riderProfilePreview" class="captured-preview" style="display:none;">
+                                    {% endif %}
+                                    {% endwith %}
+                                </div>
+                                <input type="hidden" id="riderProfileData">
+                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('rider_profile')">Change Rider Photo</button>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Rider First Name</label>
+                                <input type="text" class="form-control input-custom" id="riderFirstName" value="{{ user.student_profile.hired_riders.first.user.first_name }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Rider Last Name</label>
+                                <input type="text" class="form-control input-custom" id="riderLastName" value="{{ user.student_profile.hired_riders.first.user.last_name }}">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-bold">Rider Email</label>
+                                <input type="email" class="form-control input-custom" id="riderEmail" value="{{ user.student_profile.hired_riders.first.user.email }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Rider Phone</label>
+                                <input type="tel" class="form-control input-custom" id="riderPhone" value="{{ user.student_profile.hired_riders.first.user.phone_no }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small fw-bold">Rider Emergency</label>
+                                <input type="tel" class="form-control input-custom" id="riderEmergency" value="{{ user.student_profile.hired_riders.first.user.emergency_contact }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="form-section-title"><i class="bi bi-shield-lock me-2"></i>Security</div>
+        <div class="card-custom p-3 mb-4">
+            <p class="small text-muted mb-3">Keep your account secure by updating your password regularly.</p>
+            <button type="button" class="btn btn-outline-danger w-100 rounded-pill py-2 fw-bold" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                <i class="bi bi-key me-2"></i>Change Password
+            </button>
+        </div>
+
+        <button type="submit" class="btn btn-primary-custom w-100 py-3 rounded-4 fw-bold mb-5 shadow" id="saveProfileBtn">
+            Save Changes
+        </button>
+    </form>
+</div>
+
+<!-- Password Modal -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 rounded-4 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold">Update Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="changePasswordForm" onsubmit="handleChangePassword(event)">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">Current Password</label>
+                        <input type="password" class="form-control input-custom" id="oldPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold">New Password</label>
+                        <input type="password" class="form-control input-custom" id="newPassword" required>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold">Confirm New Password</label>
+                        <input type="password" class="form-control input-custom" id="confirmPassword" required>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="submit" class="btn btn-primary-custom w-100 py-2 rounded-3 fw-bold" id="confirmPassBtn">
+                        Confirm Update
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Camera Modal -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 bg-dark shadow-lg">
+            <div class="modal-header border-0 text-white">
+                <h5 class="modal-title fw-bold small text-uppercase letter-spacing-1">Live Camera</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="stopCamera()"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="camera-container">
+                    <video id="cameraVideo" autoplay playsinline></video>
+                    <div class="camera-overlay">
+                        <button type="button" class="camera-btn" onclick="rotateCamera()">
+                            <i class="bi bi-arrow-repeat"></i>
+                        </button>
+                        <button type="button" class="camera-btn text-primary" onclick="capturePhoto()">
+                            <i class="bi bi-camera-fill"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-3 bg-dark text-white-50 text-center small">
+                    Align your subject within the frame and click the camera icon.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<canvas id="photoCanvas" style="display:none;"></canvas>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let cameraModal;
+    let cameraStream = null;
+    let video;
+    let canvas;
+    let currentFacingMode = 'user';
+    let currentCaptureType = '';
+
+    const previewMap = {
+        'profile': { preview: 'profilePicPreview', icon: 'profilePicIcon', input: 'profilePicData' },
+        'idcard': { preview: 'idCardPreview', icon: 'idCardIcon', input: 'idCardData' },
+        'tax_token': { preview: 'taxTokenPreview', icon: 'taxTokenIcon', input: 'taxTokenData' },
+        'license': { preview: 'licensePreview', icon: 'licenseIcon', input: 'licenseData' },
+        'rider_profile': { preview: 'riderProfilePreview', icon: 'riderProfileIcon', input: 'riderProfileData' }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
+        video = document.getElementById('cameraVideo');
+        canvas = document.getElementById('photoCanvas');
+    });
+
+    function toggleVehicleFields(show) {
+        const fields = document.getElementById('vehicleEditFields');
+        if (show) fields.classList.remove('d-none');
+        else fields.classList.add('d-none');
+    }
+
+    function toggleRiderFields(mode) {
+        const hiredFields = document.getElementById('hiredRiderFields');
+        if (mode === 'driver') hiredFields.classList.remove('d-none');
+        else hiredFields.classList.add('d-none');
+    }
+
+    async function openCamera(type) {
+        currentCaptureType = type;
+        currentFacingMode = (type === 'profile' || type === 'rider_profile') ? 'user' : 'environment';
+        await startCamera();
+        cameraModal.show();
+    }
+
+    async function startCamera() {
+        if (cameraStream) stopCamera();
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: currentFacingMode },
+                audio: false
+            });
+            video.srcObject = cameraStream;
+        } catch (err) {
+            showToast("Camera error: " + err.message, "error");
+        }
+    }
+
+    function stopCamera() {
+        if (cameraStream) {
+            cameraStream.getTracks().forEach(t => t.stop());
+            cameraStream = null;
+        }
+    }
+
+    function rotateCamera() {
+        currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+        startCamera();
+    }
+
+    function capturePhoto() {
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        
+        const target = previewMap[currentCaptureType];
+        if (target) {
+            const preview = document.getElementById(target.preview);
+            const input = document.getElementById(target.input);
+            const icon = document.getElementById(target.icon);
+
+            preview.src = dataUrl;
+            preview.style.display = 'block';
+            input.value = dataUrl;
+            if (icon) icon.style.display = 'none';
+        }
+
+        stopCamera();
+        cameraModal.hide();
+        showToast("Photo captured!");
+    }
+
+    async function handleUpdateProfile(event) {
+        event.preventDefault();
+        const btn = document.getElementById('saveProfileBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving changes...';
+
+        const data = {
+            first_name: document.getElementById('editFirstName').value,
+            last_name: document.getElementById('editLastName').value,
+            phone_no: document.getElementById('editPhone').value,
+            emergency_phone: document.getElementById('editEmergency').value,
+            profile_pic: document.getElementById('profilePicData').value,
+            id_card_pic: document.getElementById('idCardData')?.value,
+            community: document.getElementById('editCommunity')?.value,
+            has_vehicle: document.getElementById('editHasVehicle')?.checked || false
+        };
+
+        if (data.has_vehicle) {
+            const driveType = document.getElementById('editDriveMode').value;
+            data.vehicle_info = {
+                vehicle_type: document.getElementById('editVehicleType').value,
+                model: document.getElementById('editVehicleModel').value,
+                plate_no: document.getElementById('editVehiclePlate').value,
+                capacity: document.getElementById('editVehicleCapacity').value,
+                drive_type: driveType,
+                tax_token_pic: document.getElementById('taxTokenData').value,
+                license_no: document.getElementById('editLicenseNo').value,
+                license_pic: document.getElementById('licenseData').value
+            };
+
+            if (driveType === 'driver') {
+                data.rider_info = {
+                    first_name: document.getElementById('riderFirstName').value,
+                    last_name: document.getElementById('riderLastName').value,
+                    email: document.getElementById('riderEmail').value,
+                    phone_no: document.getElementById('riderPhone').value,
+                    emergency_no: document.getElementById('riderEmergency').value,
+                    profile_pic: document.getElementById('riderProfileData').value
+                };
+            }
+        }
+
+        {% if user.is_student %}
+        data.alt_email = document.getElementById('editAltEmail').value;
+        {% endif %}
+
+        try {
+            const response = await fetch("{% url 'accounts:update_student_api' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showToast("Profile updated successfully!", "success");
+                setTimeout(() => window.location.href = "{% url 'accounts:settings' %}", 1000);
+            } else {
+                throw new Error(result.message || "Failed to update profile");
+            }
+        } catch (err) {
+            showToast(err.message, "error");
+            btn.disabled = false;
+            btn.innerHTML = 'Save Changes';
+        }
+    }
+
+    async function handleChangePassword(event) {
+        event.preventDefault();
+        const oldPass = document.getElementById('oldPassword').value;
+        const newPass = document.getElementById('newPassword').value;
+        const confirmPass = document.getElementById('confirmPassword').value;
+
+        const btn = document.getElementById('confirmPassBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+
+        try {
+            const response = await fetch("{% url 'accounts:change_password_api' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ 
+                    old_password: oldPass, 
+                    new_password1: newPass,
+                    new_password2: confirmPass 
+                })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                showToast("Password updated successfully!", "success");
+                bootstrap.Modal.getInstance(document.getElementById('changePasswordModal')).hide();
+                document.getElementById('changePasswordForm').reset();
+            } else {
+                throw new Error(result.message || "Failed to update password");
+            }
+        } catch (err) {
+            showToast(err.message, "error");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Confirm Update';
+        }
+    }
+</script>
+{% endblock %}

@@ -161,6 +161,12 @@ body {
     background-size: cover;
 }
 
+.active-tab {
+    background: var(--primary-color) !important;
+    color: white !important;
+    box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+}
+
 #additionalPages {
     height: 100%;
     width: 100%;
@@ -193,26 +199,73 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: var(--card-bg);
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-end;
+    padding: 10px 10px calc(12px + env(safe-area-inset-bottom, 0px)) 10px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    z-index: 2000;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.08);
 }
 
 .bottom-nav .nav-item {
     flex: 1;
-    text-align: center;
-    padding: 10px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #9aa0a6;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
     cursor: pointer;
-    transition: all 0.3s;
-    color: #6c757d;
+    background: transparent;
+    border: none;
+    outline: none;
+}
+
+.bottom-nav .nav-item i {
+    font-size: 1.5rem;
+    margin-bottom: 2px;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .bottom-nav .nav-item.active {
     color: var(--primary-color);
 }
 
-.bottom-nav .nav-item i {
-    font-size: 1.5rem;
+.bottom-nav .nav-item.active i {
+    transform: translateY(-5px);
+}
+
+.bottom-nav .nav-item p {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.bottom-nav .nav-item.active p {
+    transform: translateY(-2px);
+}
+
+.bottom-nav .nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    width: 5px;
+    height: 5px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--primary-color);
+}
+
+.x-small {
+    font-size: 0.65rem;
 }
 
 .map-container {
@@ -644,6 +697,55 @@ body {
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+/* === CUSTOM MAP MANAGER STYLES === */
+.rider-marker-ptr {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+}
+
+.rider-ptr-bg {
+    background: var(--primary-color);
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 15px rgba(26, 115, 232, 0.4);
+    border: 3px solid white;
+    animation: marker-bounce 2s infinite ease-in-out;
+}
+
+.route-dot-marker {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes marker-bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.leaflet-routing-container {
+    display: none !important;
+}
+
+/* Enforce consistent map height */
+[id*="Map"],
+[id*="map"] {
+    height: 350px !important;
+    min-height: 350px !important;
 }
 
 .form-section {
