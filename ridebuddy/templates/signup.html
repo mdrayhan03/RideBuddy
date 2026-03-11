@@ -531,20 +531,60 @@
         cameraModal = new bootstrap.Modal(document.getElementById('cameraModal'));
         video = document.getElementById('cameraVideo');
         canvas = document.getElementById('photoCanvas');
+
+        // Capture HTML5 validation errors and show as toasts
+        const form = document.getElementById('unifiedSignupForm');
+        form.addEventListener('invalid', (e) => {
+            e.preventDefault();
+            const label = e.target.closest('.col-md-6')?.querySelector('.form-label') || 
+                          e.target.closest('.col-12')?.querySelector('.form-label');
+            const name = label ? label.innerText.replace('*', '').trim() : (e.target.placeholder || "Required field");
+            showToast(`${name} is missing or invalid`, "error");
+            e.target.focus();
+        }, true);
     });
 
+    function validateContainer(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return true;
+        const inputs = container.querySelectorAll('input[required], select[required]');
+        for (let input of inputs) {
+            if (!input.checkValidity()) {
+                const label = input.closest('.col-md-6')?.querySelector('.form-label') || 
+                              input.closest('.col-12')?.querySelector('.form-label');
+                const name = label ? label.innerText.replace('*', '').trim() : (input.placeholder || "This field");
+                showToast(`${name} is required`, "error");
+                input.focus();
+                return false;
+            }
+        }
+        return true;
+    }
+
     function goToStep(step) {
+        // Validation for moving from Step 1 to Step 2
+        if (step === 2) {
+            if (!validateContainer('step1')) return;
+            
+            if (!document.getElementById('profilePicData').value || !document.getElementById('idCardData').value) {
+                showToast("Profile Picture and ID Card capture are required", "error");
+                return;
+            }
+        }
+
         document.querySelectorAll('.form-step').forEach(s => {
             s.classList.remove('active');
             s.style.display = 'none';
         });
         const activeStep = document.getElementById('step' + step);
-        activeStep.style.display = 'block';
-        activeStep.classList.remove('d-none');
-        setTimeout(() => activeStep.classList.add('active'), 10);
+        if (activeStep) {
+            activeStep.style.display = 'block';
+            activeStep.classList.remove('d-none');
+            setTimeout(() => activeStep.classList.add('active'), 10);
 
-        document.getElementById('regProgress').style.width = (step === 1 ? '50%' : '100%');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('regProgress').style.width = (step === 1 ? '50%' : '100%');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     }
 
     function moveFocus(current, event) {
@@ -704,6 +744,13 @@
     async function handleUnifiedSignup(event) {
         event.preventDefault();
 
+        // Check overall form validity
+        const form = document.getElementById('unifiedSignupForm');
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
         const btn = document.getElementById('createAccountBtn');
         btn.disabled = true;
         const originalBtnHTML = btn.innerHTML;
@@ -726,14 +773,14 @@
 
         // Basic Validation
         if (!data.community) {
-            showToast("Please select your community", "warning");
+            showToast("Please select your community", "error");
             btn.disabled = false;
             btn.innerHTML = originalBtnHTML;
             return;
         }
 
         if (!data.profile_pic || !data.id_card_pic) {
-            showToast("Please capture profile and ID card photos", "warning");
+            showToast("Please capture profile and ID card photos", "error");
             btn.disabled = false;
             btn.innerHTML = originalBtnHTML;
             return;
@@ -747,7 +794,7 @@
             const driveType = document.querySelector('input[name="driveType"]:checked').value;
 
             if (!carModel || !carNumber || !carSeats) {
-                showToast("Please fill in car details", "warning");
+                showToast("Please fill in car details", "error");
                 btn.disabled = false;
                 btn.innerHTML = originalBtnHTML;
                 return;
@@ -763,7 +810,7 @@
             };
             
             if (!data.car_info.tax_token) {
-                showToast("Please capture vehicle tax token photo", "warning");
+                showToast("Please capture vehicle tax token photo", "error");
                 btn.disabled = false;
                 btn.innerHTML = originalBtnHTML;
                 return;
@@ -782,14 +829,14 @@
                 };
 
                 if (!data.rider_info.first_name || !data.rider_info.last_name || !data.rider_info.email || !data.rider_info.phone_no || !data.rider_info.emergency_no || !data.rider_info.license_no) {
-                    showToast("Please fill in rider details and license info", "warning");
+                    showToast("Please fill in rider details and license info", "error");
                     btn.disabled = false;
                     btn.innerHTML = originalBtnHTML;
                     return;
                 }
 
                 if (!data.rider_info.profile_pic || !data.rider_info.license_pic) {
-                    showToast("Please capture rider profile and license photos", "warning");
+                    showToast("Please capture rider profile and license photos", "error");
                     btn.disabled = false;
                     btn.innerHTML = originalBtnHTML;
                     return;
@@ -802,7 +849,7 @@
                 };
 
                 if (!data.student_license.no || !data.student_license.pic) {
-                    showToast("Please provide your license number and photo", "warning");
+                    showToast("Please provide your license number and photo", "error");
                     btn.disabled = false;
                     btn.innerHTML = originalBtnHTML;
                     return;

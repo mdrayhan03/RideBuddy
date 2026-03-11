@@ -68,7 +68,8 @@ db.sqlite3-journal
 media/
 staticfiles/
 documents/
-
+temp/
+gitignore/
 
 # Flask stuff
 instance/

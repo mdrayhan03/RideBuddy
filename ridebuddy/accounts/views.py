@@ -333,7 +333,6 @@ def signup_api(request):
                     user=student_user,
                     employer_student=student_profile,
                     vehicle=vehicle,
-                    phone_no=student_user.phone_no, # Ensure phone carries over
                     license_no=data.get('student_license', {}).get('no')
                 )
                 
@@ -344,12 +343,13 @@ def signup_api(request):
             elif drive_type == 'driver':
                 # Create a new user for the rider
                 rider_info = data.get('rider_info')
-                # Generate a unique username for rider: rider_ + email prefix + random
-                rider_username = f"rider_{rider_info.get('email').split('@')[0]}".lower()
+                # Generate a unique username for rider: student_username_rider
+                rider_username = f"{username}_rider".lower()
                 
-                # Check if rider username exists, if so append something
+                # Check if rider username exists
                 if User.objects.filter(username=rider_username).exists():
-                    rider_username = f"{rider_username}_{id_no}".lower()
+                    email_prefix = rider_info.get('email').split('@')[0]
+                    rider_username = f"{username}_{email_prefix}_rider".lower()
 
                 rider_user = User.objects.create_user(
                     username=rider_username,
@@ -371,7 +371,6 @@ def signup_api(request):
                     user=rider_user,
                     employer_student=student_profile,
                     vehicle=vehicle,
-                    phone_no=rider_info.get('phone_no'),
                     license_no=rider_info.get('license_no')
                 )
                 
@@ -581,11 +580,13 @@ def update_student_api(request):
                 rider_profile = student_profile.hired_riders.first()
                 
                 if not rider_profile:
-                    # Create a new user for the rider
+                    # Create a new user for the rider: student_username_rider
                     rider_email = rider_info.get('email')
-                    rider_username = f"rider_{rider_email.split('@')[0]}".lower()
+                    rider_username = f"{student_profile.user.username}_rider".lower()
+                    
                     if User.objects.filter(username=rider_username).exists():
-                        rider_username = f"{rider_username}_{student_profile.id_no}".lower()
+                        email_prefix = rider_email.split('@')[0]
+                        rider_username = f"{student_profile.user.username}_{email_prefix}_rider".lower()
                     
                     rider_user = User.objects.create_user(
                         username=rider_username,
