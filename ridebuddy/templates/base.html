@@ -101,7 +101,16 @@
             {% else %}
             appState.userType = "{{ user.is_student|yesno:'student,rider' }}";
             {% endif %}
+            
             appState.isLoggedIn = true;
+            
+            // CRITICAL: Sync current user info to prevent stale LocalStorage data
+            appState.currentUser = {
+                name: "{{ user.get_full_name|escapejs }}",
+                username: "{{ user.username|escapejs }}",
+                profile_pic: "{% if user.profile_picture %}{{ user.profile_picture.url }}{% endif %}"
+            };
+            
             saveState();
         }
         {% endif %}

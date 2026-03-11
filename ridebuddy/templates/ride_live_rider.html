@@ -379,7 +379,11 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        const rideId = urlParams.get('ride_id');
+        let rideId = urlParams.get('ride_id');
+        
+        if (!rideId && typeof appState !== 'undefined') {
+            rideId = appState.currentRideId || localStorage.getItem('currentRideId');
+        }
         
         if (!rideId) {
             showToast("No active journey found", "error");

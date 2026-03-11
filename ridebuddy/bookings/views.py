@@ -320,8 +320,22 @@ def cancel_activity_api(request):
             if new_status not in ['started', 'completed']:
                 return JsonResponse({'success': False, 'message': 'Invalid status update.'})
                 
-            ride.status = new_status
-            ride.save()
+            if new_status == 'completed':
+                ride.status = 'completed'
+                from django.utils import timezone
+                ride.dropped_time = timezone.now()
+                ride.save()
+                
+                # Mark all associated bookings as completed
+                for b in ride.bookings.all():
+                    b.status = 'completed'
+                    if not b.dropoff:
+                         b.dropoff = {'drop': 'done', 'time': timezone.now().isoformat()}
+                    b.save()
+            else:
+                ride.status = new_status
+                ride.save()
+                
             return JsonResponse({'success': True, 'message': f'Ride {new_status} successfully'})
 
         elif act_type == 'hosting':

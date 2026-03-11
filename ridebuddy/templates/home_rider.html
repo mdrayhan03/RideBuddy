@@ -14,6 +14,43 @@
         z-index: 1;
     }
     .leaflet-routing-container { display: none; }
+
+    .map-legend {
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 0 12px;
+        margin-top: 10px;
+        margin-bottom: 20px;
+        scrollbar-width: none;
+        border-radius: 12px;
+    }
+
+    .legend-item {
+        height: 40px;
+        flex-shrink: 0;
+        background: white;
+        border-radius: 50px;
+        padding: 0 14px 0 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border: 1px solid #f1f1f1;
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #444;
+    }
+
+    .legend-icon-img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+    }
     
     .passenger-avatars .avatar {
         width: 32px;
@@ -68,15 +105,15 @@
             <div class="p-4 fade-in">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h5 class="mb-1 fw-bold">Hello, <span id="riderNameDisplay">{{ user.first_name|default:user.username }}</span>! 🏍️</h5>
+                        <h5 class="mb-1 fw-bold">Hello, <span id="riderNameDisplay">{{ display_user.get_full_name|default:"Rider" }}</span>! 🏍️</h5>
                         <p class="text-muted small mb-0">Ready to accept rides?</p>
                     </div>
-                    {% if user.profile_picture %}
-                    <img src="{{ user.profile_picture.url }}" class="avatar avatar-sm rounded-circle" alt="Profile">
+                    {% if display_user.profile_picture %}
+                    <img src="{{ display_user.profile_picture.url }}" class="avatar avatar-sm rounded-circle" alt="Profile">
                     {% else %}
                     <div class="avatar avatar-sm"
                         style="background: linear-gradient(135deg, var(--secondary-color) 0%, #46c263 100%);">
-                        {{ user.username|slice:":1"|upper }}
+                        {{ display_user.first_name|slice:":1"|upper|default:"R" }}
                     </div>
                     {% endif %}
                 </div>
@@ -84,10 +121,11 @@
                 <!-- Map -->
                 <div id="riderHomeMap" class="mb-2"></div>
                 <div id="mapLegend" class="map-legend mb-4"></div>
-
                 <!-- Active Ride Card (Dynamic) -->
                 {% if active_ride %}
-                <div class="active-ride-info-card mb-4 animate-slide-up" onclick="location.href='{% url 'rides:ride_host_rider' %}'" style="cursor: pointer;">
+                <div class="active-ride-info-card mb-4 animate-slide-up" 
+                     onclick="{% if active_ride.status == 'started' %}location.href='{% url 'rides:ride_live_rider' %}?ride_id={{ active_ride.id }}'{% else %}location.href='{% url 'rides:ride_host_rider' %}'{% endif %}" 
+                     style="cursor: pointer;">
                     <div class="card-custom p-4 border-2 border-primary bg-white shadow-sm position-relative overflow-hidden" style="border: 2px solid var(--primary-color) !important;">
                         <div class="position-absolute top-0 end-0 p-2">
                              <span class="badge bg-primary px-3 rounded-pill shadow-sm">Active Ride</span>
@@ -222,7 +260,7 @@
                     const legendItem = document.createElement('div');
                     legendItem.className = 'legend-item';
                     legendItem.innerHTML = `
-                        <img src="${m.icon}" style="width: 20px; height: 20px; object-fit: contain;">
+                        <img src="${m.icon}" class="legend-icon-img">
                         <span>${m.name.split(' ')[0]}</span>
                     `;
                     legendContainer.appendChild(legendItem);
@@ -249,17 +287,30 @@
                 }, 500);
             }
         } else {
-            // No active ride logic
+            // No active ride logic - Show vehicle marker at current location
             const riderIcon = L.divIcon({
-                className: 'r-marker',
+                className: 'rider-marker',
                 html: `<div class="rider-marker-container">
                         <div class="rider-marker-ping"></div>
-                        <i class="bi bi-geo-alt-fill fs-3 text-primary shadow"></i>
+                        <img src="/static/assets/media/vehiclemarker.png" style="width:38px; height:38px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3)); position: relative; z-index: 2;">
                        </div>`,
-                iconSize: [30, 30],
-                iconAnchor: [15, 30]
+                iconSize: [28, 28],
+                iconAnchor: [14, 28]
             });
-            L.marker([rLat, rLng], { icon: riderIcon }).addTo(map);
+            const marker = L.marker([rLat, rLng], { icon: riderIcon }).addTo(map);
+            marker.bindPopup("<b>I am here</b>");
+            
+            // Add to legend
+            if (legendContainer) {
+                const legendItem = document.createElement('div');
+                legendItem.className = 'legend-item';
+                legendItem.innerHTML = `
+                    <img src="/static/assets/media/vehiclemarker.png" class="legend-icon-img">
+                    <span>Me</span>
+                `;
+                legendContainer.appendChild(legendItem);
+            }
+
             bounds.extend([rLat, rLng]);
             map.setView([rLat, rLng], 15);
         }

@@ -51,10 +51,12 @@ def update_drop_status(booking_id, rider_location, user_location):
         booking.save()
         
         # Check if all bookings in the associated ride are completed
-        ride = booking.rides.first() # ride_host_rider context
+        ride = booking.rides.first()
         if ride:
-            all_completed = ride.bookings.exclude(status='completed').count() == 0
-            if all_completed:
+            total_bookings = ride.bookings.count()
+            completed_bookings = ride.bookings.filter(status='completed').count()
+            
+            if total_bookings > 0 and total_bookings == completed_bookings:
                 ride.status = 'completed'
                 ride.dropped_time = timezone.now()
                 ride.save()

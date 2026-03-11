@@ -121,7 +121,7 @@
             const statusClass = ride.status === 'started' ? 'text-success' : 'text-primary';
             
             return `
-                <div class="card-custom p-3 bg-white shadow-sm border-0 rounded-4 cursor-pointer hover-scale" onclick="showRiderDetail(${ride.id})">
+                <div class="card-custom p-3 bg-white shadow-sm border-0 rounded-4 cursor-pointer hover-scale" onclick="showRiderDetail(${ride.id}, '${ride.status}')">
                     <div class="d-flex align-items-center gap-3">
                         <div class="bg-primary bg-opacity-10 p-3 rounded-4">
                             <i class="bi bi-lightning-charge-fill ${statusClass} fs-4"></i>
@@ -158,13 +158,17 @@
         return `${mins}m ${secs}s`;
     }
 
-    function showRiderDetail(rideId) {
+    function showRiderDetail(rideId, status) {
         if (typeof appState !== 'undefined') {
             appState.currentRideId = rideId;
             saveState();
         }
         localStorage.setItem('currentRideId', rideId);
-        navigateTo('ride_host_rider');
+        if (status === 'started') {
+            navigateTo('ride_live_rider?ride_id=' + rideId);
+        } else {
+            navigateTo('ride_host_rider');
+        }
     }
 </script>
 {% endblock %}

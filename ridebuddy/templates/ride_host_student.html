@@ -361,7 +361,7 @@
         if (initialMapData) renderHostMap(initialMapData);
 
         refreshRideSync(rideId);
-        setInterval(() => refreshRideSync(rideId), 10000);
+        window.syncInterval = setInterval(() => refreshRideSync(rideId), 10000);
 
         // Timer
         let waitSecs = {{ wait_left|default:0 }} * 60;
@@ -383,6 +383,16 @@
             const response = await fetch(url);
             const data = await response.json();
             if (data.success) {
+                const me = data.ride.passengers.find(p => p.is_user);
+                const isMeDropped = me && (me.status === 'completed' || (me.dropoff_data && me.dropoff_data.drop === 'done'));
+
+                if (data.ride.status === 'completed' || data.ride.status === 'cancelled' || isMeDropped) {
+                    if (window.syncInterval) clearInterval(window.syncInterval);
+                    const msg = isMeDropped ? "You've reached your destination!" : `Journey ${data.ride.status}!`;
+                    showToast(msg, data.ride.status === 'cancelled' ? 'info' : 'success');
+                    setTimeout(() => navigateTo('history_student'), 2500);
+                    return;
+                }
                 currentRide = data.ride;
                 renderHostUI(data.ride);
                 if (data.map_data) renderHostMap(data.map_data);

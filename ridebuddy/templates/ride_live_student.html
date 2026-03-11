@@ -66,6 +66,9 @@
     }
 
     .map-legend {
+        height: 40px !important;
+        min-height: 40px !important;
+        max-height: 40px !important;
         display: flex;
         flex-wrap: wrap;
         gap: 12px;
@@ -271,11 +274,17 @@
             const data = await response.json();
             if (!data.success) return;
 
-            if (data.ride.status === 'completed') {
-                clearInterval(locationInterval);
-                clearInterval(trackingInterval);
-                showToast("Journey completed!", "success");
-                setTimeout(() => navigateTo('activity_student'), 2000);
+            const me = data.ride.passengers.find(p => p.is_user);
+            const isMeDropped = me && (me.status === 'completed' || (me.dropoff_data && me.dropoff_data.drop === 'done'));
+
+            if (data.ride.status === 'completed' || isMeDropped) {
+                if (locationInterval) clearInterval(locationInterval);
+                if (trackingInterval) clearInterval(trackingInterval);
+                
+                const msg = isMeDropped ? "You've reached your destination!" : "Journey completed!";
+                showToast(msg, "success");
+                
+                setTimeout(() => navigateTo('history_student'), 2500);
                 return;
             }
 
@@ -314,33 +323,50 @@
 
     function updateJourneyUI(ride) {
         const container = document.getElementById('passengersListContainer');
-        const displayedPassengers = ride.passengers.filter(p => !p.is_rider);
         
-        container.innerHTML = displayedPassengers.map(p => {
+        // Include both Rider and Passengers
+        const allParticipants = [
+            { ...ride.rider, is_driver: true },
+            ...ride.passengers.filter(p => !p.is_rider)
+        ];
+        
+        container.innerHTML = allParticipants.map(p => {
+            const isDriver = p.is_driver;
             const isPicked = p.pickup_data?.pickup === 'done';
-            const isDropped = p.dropoff_data?.drop === 'done';
+            const isDropped = p.dropoff_data?.drop === 'done' || p.status === 'completed';
 
             let statusHtml = '';
-            if (isDropped) {
-                statusHtml = `<span class="status-badge-premium bg-info text-dark bg-opacity-10"><i class="bi bi-geo-fill"></i> Dropped</span>`;
+            if (isDriver) {
+                statusHtml = `<span class="status-badge-premium bg-primary text-primary bg-opacity-10"><i class="bi bi-steering-wheel"></i> Driving</span>`;
+            } else if (isDropped) {
+                statusHtml = `<span class="status-badge-premium bg-success text-success bg-opacity-10"><i class="bi bi-geo-fill"></i> Dropped</span>`;
             } else if (isPicked) {
                 statusHtml = `<span class="status-badge-premium bg-success text-success bg-opacity-10"><i class="bi bi-person-check-fill"></i> Onboard</span>`;
             } else {
                 statusHtml = `<span class="status-badge-premium bg-warning text-warning bg-opacity-10"><i class="bi bi-clock"></i> Waiting</span>`;
             }
 
+            // Update Header Name if this is the rider card
+            if (isDriver && ride.rider.name) {
+                const headerTitle = document.querySelector('.host-status-card h3');
+                if (headerTitle) headerTitle.textContent = `Tracking ${ride.rider.name}`;
+                
+                const hostRouteText = document.getElementById('hostRouteText');
+                if (hostRouteText) hostRouteText.textContent = ride.route_summary;
+            }
+
             return `
                 <div class="passenger-item-v2 d-flex align-items-center gap-3">
                     <div class="passenger-avatar-v2">
-                        ${p.photo ? `<img src="${p.photo}" class="w-100 h-100 object-fit-cover">` : p.name[0]}
+                        ${p.photo ? `<img src="${p.photo}" class="w-100 h-100 object-fit-cover">` : (p.name ? p.name[0] : 'R')}
                     </div>
                     <div class="flex-grow-1">
                         <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fw-bold text-dark">${p.name}</span>
+                            <span class="fw-bold text-dark">${p.name || 'Rider'} ${isDriver ? '<small class="text-primary">(Driver)</small>' : ''}</span>
                             ${statusHtml}
                         </div>
                         <div class="text-muted small">
-                            ${p.pickup?.split(',')[0]} → ${p.drop?.split(',')[0]}
+                            ${isDriver ? `Vehicle: ${ride.vehicle_model || 'Standard'}` : `${p.pickup?.split(',')[0]} → ${p.drop?.split(',')[0]}`}
                         </div>
                     </div>
                 </div>`;

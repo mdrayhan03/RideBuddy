@@ -97,8 +97,8 @@
         <!-- Profile Picture & ID Card -->
         <div class="form-section-title"><i class="bi bi-person-lines-fill me-2"></i>Personal Information</div>
         <div class="card-custom p-3 mb-4">
-            <div class="row g-4">
-                <div class="col-md-6 text-center border-end">
+            <div class="row g-4 justify-content-center">
+                <div class="{% if user.is_student and user.is_rider %}col-md-4{% else %}col-md-6{% endif %} text-center border-end">
                     <p class="small fw-bold mb-2">Profile Picture</p>
                     <div class="image-upload mx-auto mb-3" onclick="openCamera('profile')">
                         {% if user.profile_picture %}
@@ -111,8 +111,9 @@
                     <input type="hidden" id="profilePicData">
                     <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('profile')">Change Photo</button>
                 </div>
+
                 {% if user.is_student %}
-                <div class="col-md-6 text-center">
+                <div class="{% if user.is_student and user.is_rider %}col-md-4 border-end{% else %}col-md-6{% endif %} text-center">
                     <p class="small fw-bold mb-2">Student ID Card</p>
                     <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('idcard')">
                         {% if user.student_profile.id_picture %}
@@ -124,6 +125,22 @@
                     </div>
                     <input type="hidden" id="idCardData">
                     <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('idcard')">Update ID Card</button>
+                </div>
+                {% endif %}
+
+                {% if user.is_rider %}
+                <div class="{% if user.is_student and user.is_rider %}col-md-4{% else %}col-md-6{% endif %} text-center">
+                    <p class="small fw-bold mb-2">Driving License</p>
+                    <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('license')">
+                        {% if user.rider_profile.license_picture %}
+                        <img id="licensePreview" src="{{ user.rider_profile.license_picture.url }}" class="captured-preview">
+                        {% else %}
+                        <i class="bi bi-file-earmark-person fs-2 text-muted" id="licenseIcon"></i>
+                        <img id="licensePreview" class="captured-preview" style="display:none;">
+                        {% endif %}
+                    </div>
+                    <input type="hidden" id="licenseData">
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('license')">Update License</button>
                 </div>
                 {% endif %}
             </div>
@@ -228,31 +245,17 @@
                         <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('tax_token')">Update Tax Token</button>
                     </div>
 
-                    <!-- License Section -->
-                    <div class="col-12 mt-4" id="licenseSection">
-                        <div class="form-section-title small mb-2">Driver verification</div>
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label class="form-label small fw-bold">License Number</label>
-                                <input type="text" class="form-control input-custom" id="editLicenseNo" value="{% if user.student_profile.driver_type == 'self_drive' %}{{ user.rider_profile.license_no }}{% else %}{{ user.student_profile.hired_riders.first.license_no }}{% endif %}">
-                            </div>
-                            <div class="col-12 text-center">
-                                <p class="small fw-bold mb-2">License Photo</p>
-                                <div class="image-upload card-upload mx-auto mb-3" onclick="openCamera('license')">
-                                    {% if user.student_profile.driver_type == 'self_drive' and user.rider_profile.license_picture %}
-                                    <img id="licensePreview" src="{{ user.rider_profile.license_picture.url }}" class="captured-preview">
-                                    {% elif user.student_profile.driver_type == 'has_driver' and user.student_profile.hired_riders.first.license_picture %}
-                                    <img id="licensePreview" src="{{ user.student_profile.hired_riders.first.license_picture.url }}" class="captured-preview">
-                                    {% else %}
-                                    <i class="bi bi-file-earmark-person fs-2 text-muted" id="licenseIcon"></i>
-                                    <img id="licensePreview" class="captured-preview" style="display:none;">
-                                    {% endif %}
-                                </div>
-                                <input type="hidden" id="licenseData">
-                                <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="openCamera('license')">Update License</button>
-                            </div>
-                        </div>
-                    </div>
+        {% if user.is_rider %}
+        <div class="form-section-title"><i class="bi bi-card-checklist me-2"></i>Rider Verification</div>
+        <div class="card-custom p-3 mb-4">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label class="form-label small fw-bold">License Number</label>
+                    <input type="text" class="form-control input-custom" id="editLicenseNo" value="{{ user.rider_profile.license_no|default:'' }}">
+                </div>
+            </div>
+        </div>
+        {% endif %}
 
                     <!-- Hired Rider Section -->
                     <div class="col-12 mt-4 {% if user.student_profile.driver_type != 'has_driver' %}d-none{% endif %}" id="hiredRiderFields">
@@ -486,6 +489,11 @@
             community: document.getElementById('editCommunity')?.value,
             has_vehicle: document.getElementById('editHasVehicle')?.checked || false
         };
+
+        if (document.getElementById('editLicenseNo')) {
+            data.license_no = document.getElementById('editLicenseNo').value;
+            data.license_pic = document.getElementById('licenseData').value;
+        }
 
         if (data.has_vehicle) {
             const driveType = document.getElementById('editDriveMode').value;

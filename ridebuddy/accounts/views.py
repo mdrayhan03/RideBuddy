@@ -360,7 +360,8 @@ def signup_api(request):
                     phone_no=rider_info.get('phone_no'),
                     emergency_contact=rider_info.get('emergency_no'),
                     is_rider=True,
-                    is_verified=False
+                    is_verified=student_user.is_verified,
+                    is_active=student_user.is_active
                 )
                 
                 if rider_info.get('profile_pic'):
@@ -412,6 +413,15 @@ def verify_otp_api(request):
             user.is_verified = True
             user.save()
             
+            # If student is verified, their hired rider (if any) should also be verified
+            if user.is_student and hasattr(user, 'student_profile'):
+                hired_riders = Rider.objects.filter(employer_student=user.student_profile)
+                for rider in hired_riders:
+                    rider_user = rider.user
+                    rider_user.is_verified = True
+                    rider_user.is_active = True
+                    rider_user.save()
+
             # Log the user in
             login(request, user)
             
@@ -439,8 +449,17 @@ def home_rider(request):
     if not request.user.is_rider:
         return redirect('accounts:home_student')
     
-    # Get latest active/started ride for this user (as rider)
+    # Determine if we are viewing as a self-driving student or a hired rider
     from rides.services import get_active_ride_for_user, format_ride, get_ride_map_data
+    
+     # This finds the ride where the user is involved
+    
+    # Identifty the rider profile
+    rider_profile = Rider.objects.filter(user=request.user).first()
+    
+    # Debug info for the terminal
+    print(f"DEBUG: Logged-in User: {request.user.username} ({request.user.get_full_name()})")
+    print(f"DEBUG: Found Rider Profile: {rider_profile}")
     
     active_ride = get_active_ride_for_user(request.user)
     active_ride_data = None
@@ -449,28 +468,34 @@ def home_rider(request):
         active_ride_data = format_ride(active_ride, current_user=request.user)
         map_data = get_ride_map_data(active_ride)
         
-    # Serialize map_data for JS
     map_data_json = json.dumps(map_data) if map_data else "null"
-        
-    # Get current location
+    
     latest_location = request.user.locations.order_by('-updated_at').first()
-    location_data = None
-    if latest_location:
-        location_data = {
-            'lat': latest_location.latitude,
-            'lng': latest_location.longitude
-        }
+    location_data = {'lat': latest_location.latitude, 'lng': latest_location.longitude} if latest_location else None
+    
+    # Priority: 
+    # 1. If we found a Rider profile for this user account (hired or self), use this user.
+    # 2. Fallback to request.user
+    display_user = request.user
+    if rider_profile and rider_profile.user:
+        display_user = rider_profile.user
+
+    print(f"DEBUG: Displaying as: {display_user.get_full_name()}")
     
     return render(request, 'home_rider.html', {
         'active_ride': active_ride_data,
         'map_data': map_data_json,
-        'rider_location': location_data
+        'rider_location': location_data,
+        'display_user': display_user
     })
 
 @login_required
 def home_student(request):
     if not request.user.is_student:
-        return redirect('accounts:home_rider')
+        if request.user.is_rider:
+            return redirect('accounts:home_rider')
+        # If neither student nor rider, send to login
+        return redirect('accounts:login')
     return render(request, 'home_student.html')
 
 @login_required
@@ -596,7 +621,9 @@ def update_student_api(request):
                         email=rider_email,
                         phone_no=rider_info.get('phone_no'),
                         emergency_contact=rider_info.get('emergency_no'),
-                        is_rider=True
+                        is_rider=True,
+                        is_verified=request.user.is_verified,
+                        is_active=request.user.is_active
                     )
                     rider_profile = Rider.objects.create(
                         user=rider_user,
@@ -618,9 +645,16 @@ def update_student_api(request):
                     rider_user.profile_picture = data_url_to_file(rider_info.get('profile_pic'), f"{rider_user.username}_profile")
                     rider_user.save()
                 
-                rider_profile.license_no = vehicle_data.get('license_no')
-                if vehicle_data.get('license_pic'):
-                    rider_profile.license_picture = data_url_to_file(vehicle_data.get('license_pic'), f"{rider_user.username}_license")
+                rider_profile.save()
+
+        # Independent Rider Field Updates (for hired riders or direct rider edits)
+        if user.is_rider:
+            rider_profile = getattr(user, 'rider_profile', None)
+            if rider_profile:
+                if 'license_no' in data:
+                    rider_profile.license_no = data.get('license_no')
+                if data.get('license_pic'):
+                    rider_profile.license_picture = data_url_to_file(data.get('license_pic'), f"{user.username}_license")
                 rider_profile.save()
                 
         else:
