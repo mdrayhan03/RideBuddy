@@ -9,8 +9,7 @@ class MapManager {
         this.map = null;
         this.markers = {}; // { userId: L.marker }
         this.routingControls = []; // Array of L.Routing.control
-        this._lastWaypointCount = 0;
-        this._lastStart = null;
+        this._lastWaypointsHash = null;
         this.mainRoute = null; // Single main route if needed
         this.tileLayer = null;
         this.config = {
@@ -19,7 +18,7 @@ class MapManager {
             defaultZoom: 14,
             tileUrl: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
             routingStyles: {
-                main: { color: '#1a73e8', weight: 6, opacity: 0.8 },
+                main: { color: '#202124', weight: 8, opacity: 0.9 },
                 passenger: { color: '#ea4335', weight: 4, opacity: 0.5 }
             }
         };
@@ -63,31 +62,55 @@ class MapManager {
         const pos = [lat, lng];
         const markerId = id || `marker_${lat}_${lng}`;
 
-        if (this.markers[markerId]) {
-            this.markers[markerId].setLatLng(pos);
-            if (options.popup) this.markers[markerId].setPopupContent(options.popup);
-            return this.markers[markerId];
-        }
+        let icon = null;
+        const isRider = options.type === 'rider' || (options.icon && options.icon.includes('vehiclemarker'));
 
-        let icon;
-        if (options.icon) {
-            // Use custom icon from folder (memberyellow.png, membergreen.png, etc.)
+        if (isRider) {
+            icon = L.icon({
+                iconUrl: options.icon || '/static/assets/media/vehiclemarker.png',
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -14]
+            });
+        } else if (options.icon) {
             icon = L.icon({
                 iconUrl: options.icon,
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-                popupAnchor: [0, -32]
+                iconSize: [28, 28],
+                iconAnchor: [14, 14],
+                popupAnchor: [0, -14]
             });
-        } else if (options.type === 'rider') {
-            // Priority Vehicle Marker
-            icon = L.icon({
-                iconUrl: '/static/assets/media/vehiclemarker.png',
-                iconSize: [40, 40],
-                iconAnchor: [20, 20]
+        } else if (options.small) {
+            // Minimalist dot marker for cleaner maps
+            icon = L.divIcon({
+                className: 'custom-div-dot',
+                html: `<div style="background-color: ${options.color || '#3b82f6'}; width: 12px; height: 12px; border: 2px solid white; border-radius: 50%; box-shadow: 0 2px 5px rgba(0,0,0,0.2);"></div>`,
+                iconSize: [12, 12],
+                iconAnchor: [6, 6],
+                popupAnchor: [0, -6]
             });
         }
 
-        const marker = L.marker(pos, { icon: icon }).addTo(this.map);
+        if (this.markers[markerId]) {
+            const m = this.markers[markerId];
+            m.setLatLng(pos);
+            if (icon) m.setIcon(icon);
+            if (options.popup) {
+                if (m.getPopup()) {
+                    m.setPopupContent(options.popup);
+                } else {
+                    m.bindPopup(options.popup);
+                }
+            }
+            return m;
+        }
+
+        // Only define icon if it's not null to allow the default Leaflet pin.
+        const markerOptions = {
+            zIndexOffset: options.zIndexOffset || 0
+        };
+        if (icon) markerOptions.icon = icon;
+
+        const marker = L.marker(pos, markerOptions).addTo(this.map);
         if (options.popup) marker.bindPopup(options.popup);
         this.markers[markerId] = marker;
 
@@ -95,73 +118,119 @@ class MapManager {
     }
 
     /**
+     * Efficiently updates the coordinates of existing markers.
+     * Use this for smooth live tracking without triggering full redraws or icon logic.
+     * @param {Array|Object} data - List of {id, lat, lng} or individual object.
+     */
+    updatePositions(data) {
+        if (!this.map || !data) return;
+        const list = Array.isArray(data) ? data : [data];
+
+        list.forEach(item => {
+            const marker = this.markers[item.id];
+            if (marker && item.lat != null && item.lng != null) {
+                marker.setLatLng([item.lat, item.lng]);
+                if (item.zIndexOffset) {
+                    marker.setZIndexOffset(item.zIndexOffset);
+                }
+            }
+        });
+    }
+
+    /**
      * Renders all data from the Backend Map Data service
      * @param {Object} data - Processed map data from ride_service.py
+     * @param {Object} mainStyle - Optional style override for the main route
      */
-    renderRideData(mapData) {
+    renderRideData(mapData, mainStyle = null) {
         if (!this.map || !mapData) return;
 
-        // 1. Update/Add Markers
+        // 1. Handle Routing (Road Path)
+        // We only redraw the routing line if the PICKUP/DROP waypoints have changed.
+        const waypoints = mapData.waypoints || [];
+        const wpHash = JSON.stringify(waypoints);
+
+        if (this._lastWaypointsHash !== wpHash) {
+            this.clearRouting();
+            const activeStyle = mainStyle || this.config.routingStyles.main;
+
+            if (waypoints.length >= 2) {
+                this.setMainRoute(waypoints, activeStyle);
+            } else if (mapData.main_route_geometry && mapData.main_route_geometry.points) {
+                this.drawGeometryRoute(mapData.main_route_geometry.points, activeStyle);
+            }
+            this._lastWaypointsHash = wpHash;
+
+            // Auto-fit only when the route changes to avoid disruptive zooming during live movement
+            this.autoFit();
+        }
+
+        // 2. Handle Markers (Live Tracking)
         const currentMarkerIds = new Set();
         if (mapData.markers) {
             mapData.markers.forEach(m => {
                 const markerId = m.id || `${m.lat}-${m.lng}`;
                 currentMarkerIds.add(markerId);
 
-                this.updateRideMarker(markerId, m.lat, m.lng, {
-                    type: m.type,
-                    icon: m.icon,
-                    popup: m.popup
-                });
+                const isUserMarker = m.is_user || markerId === 'rider_user' || markerId.includes('live_user_');
+                const zIndex = isUserMarker ? 1000 : 0;
+
+                if (this.markers[markerId]) {
+                    // Optimized: Only move the marker without touching routing or icons
+                    this.updatePositions({
+                        id: markerId,
+                        lat: m.lat,
+                        lng: m.lng,
+                        zIndexOffset: zIndex
+                    });
+                } else {
+                    // Create marker if it doesn't exist yet
+                    this.updateRideMarker(markerId, m.lat, m.lng, {
+                        type: m.type,
+                        icon: m.icon,
+                        popup: m.popup,
+                        zIndexOffset: zIndex
+                    });
+                }
             });
         }
 
         // Remove markers that are no longer in mapData
         Object.keys(this.markers).forEach(id => {
-            if (!currentMarkerIds.has(id)) {
+            if (!currentMarkerIds.has(id) && !id.startsWith('user_')) {
                 this.map.removeLayer(this.markers[id]);
                 delete this.markers[id];
             }
         });
+    }
 
-        // 2. Handle Routing
-        const hasGeometry = mapData.main_route_geometry && mapData.main_route_geometry.points && mapData.main_route_geometry.points.length > 0;
-
-        if (hasGeometry) {
-            this.clearRouting();
-            this.drawGeometryRoute(mapData.main_route_geometry.points);
-        } else {
-            // Fallback to LRM if no explicit geometry
-            const newWaypoints = mapData.waypoints || [];
-            const shouldUpdateRouting = this.routingControls.length === 0 ||
-                newWaypoints.length !== this._lastWaypointCount ||
-                (newWaypoints.length > 0 &&
-                    (newWaypoints[0].lat !== this._lastStart?.lat || newWaypoints[0].lng !== this._lastStart?.lng));
-
-            if (shouldUpdateRouting && newWaypoints.length >= 2) {
-                this.clearRouting();
-                this.setMainRoute(newWaypoints);
-                this._lastWaypointCount = newWaypoints.length;
-                this._lastStart = newWaypoints[0];
-            }
-        }
-
-        this.autoFit();
+    _compareWaypoints(wp1, wp2) {
+        if (wp1.length !== wp2.length) return false;
+        return wp1.every((p, i) => p[0] === wp2[i][0] && p[1] === wp2[i][1]);
     }
 
     /**
-     * Draws an exact polyline from a list of points [[lat, lon], ...]
+     * Draws an exact polyline from a list of points. 
+     * Corrects OSRM/GeoJSON [lng, lat] format to Leaflet [lat, lng]
      */
-    drawGeometryRoute(points) {
-        if (!this.map || !points) return;
+    drawGeometryRoute(points, style = null) {
+        if (!this.map || !points || points.length === 0) return;
 
-        // Convert [lat, lon] to L.latLng if needed, though polyline handles it
-        const polyline = L.polyline(points, {
-            ...this.config.routingStyles.main,
+        // Auto-fix: GeoJSON (OSRM) provides [lng, lat]. Leaflet expects [lat, lng].
+        // Dhaka is ~23N, 90E. If the first coordinate is > 60, it's definitely Longitude.
+        const processedPoints = points.map(p => {
+            if (Array.isArray(p) && p.length >= 2) {
+                if (p[0] > 60) return [p[1], p[0]]; // Flip [lng, lat] -> [lat, lng]
+                return p;
+            }
+            return p;
+        });
+
+        const polyline = L.polyline(processedPoints, {
+            ...(style || this.config.routingStyles.main),
             interactive: false
         }).addTo(this.map);
 
-        // Treat it as a routing control for consistent clearing
         this.routingControls.push(polyline);
         return polyline;
     }
@@ -175,29 +244,44 @@ class MapManager {
      * Clears specific routing controls or all of them
      */
     clearRouting() {
+        if (!this.map) {
+            this.routingControls = [];
+            return;
+        }
+
         this.routingControls.forEach(ctrl => {
-            if (ctrl.remove) {
-                ctrl.remove(); // Works for both layers and controls in Leaflet 1.0+
-            } else if (this.map.removeControl && ctrl instanceof L.Control) {
-                this.map.removeControl(ctrl);
-            } else {
-                this.map.removeLayer(ctrl);
+            try {
+                if (!ctrl) return;
+
+                // Leaflet Routing Machine Controls are specialized
+                if (ctrl instanceof L.Control || (ctrl.getPlan && ctrl.onRemove)) {
+                    this.map.removeControl(ctrl);
+                } else if (ctrl.remove) {
+                    ctrl.remove();
+                } else {
+                    this.map.removeLayer(ctrl);
+                }
+            } catch (e) {
+                console.warn("Map: Routing cleanup suppressed:", e);
             }
         });
+
         this.routingControls = [];
+        this._lastWaypoints = null;
     }
 
     /**
      * Set a single main route (e.g., for a rider's path)
      * @param {Array} waypoints - Array of [lat, lng] or L.latLng
+     * @param {Object} style - Optional style override
      */
-    setMainRoute(waypoints) {
+    setMainRoute(waypoints, style = null) {
         if (!this.map) return;
 
         const control = L.Routing.control({
             waypoints: waypoints.map(w => L.latLng(w.lat, w.lng)),
             lineOptions: {
-                styles: [this.config.routingStyles.main],
+                styles: [style || this.config.routingStyles.main],
                 addWaypoints: false
             },
             createMarker: () => null,
@@ -228,10 +312,24 @@ class MapManager {
      */
     autoFit() {
         if (!this.map) return;
-        const layers = Object.values(this.markers);
-        if (layers.length > 0) {
-            const group = new L.featureGroup(layers);
-            this.map.fitBounds(group.getBounds().pad(0.1));
+
+        const featureGroup = new L.FeatureGroup();
+
+        // Add markers
+        Object.values(this.markers).forEach(m => featureGroup.addLayer(m));
+
+        // Add polyline routes
+        this.routingControls.forEach(ctrl => {
+            if (ctrl instanceof L.Polyline) {
+                featureGroup.addLayer(ctrl);
+            } else if (ctrl._line) {
+                // LRM control has a _line property which is the polyline
+                featureGroup.addLayer(ctrl._line);
+            }
+        });
+
+        if (featureGroup.getLayers().length > 0) {
+            this.map.fitBounds(featureGroup.getBounds().pad(0.1));
         }
     }
 

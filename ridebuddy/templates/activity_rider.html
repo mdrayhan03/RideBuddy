@@ -128,7 +128,7 @@
                         </div>
                         <div class="flex-grow-1 overflow-hidden">
                             <div class="d-flex justify-content-between align-items-center mb-1">
-                                <div class="fw-bold">${ride.vehicle}</div>
+                                <div class="fw-bold">${ride.vehicle?.model || 'No Vehicle'}</div>
                                 <span class="badge ${ride.status === 'started' ? 'bg-success' : 'bg-primary'} bg-opacity-10 ${statusClass} rounded-pill x-small">
                                     ${ride.status.toUpperCase()}
                                 </span>
@@ -136,7 +136,7 @@
                             <div class="text-muted small text-truncate">${ride.route_summary}</div>
                             <div class="d-flex justify-content-between mt-2 align-items-center">
                                 <div class="text-danger x-small fw-bold"><i class="bi bi-clock me-1"></i>${timeInfo}</div>
-                                <div class="fw-bold text-dark x-small">৳${ride.total_earnings}</div>
+                                <div class="fw-bold text-dark x-small">৳${ride.total_fare || 0}</div>
                             </div>
                         </div>
                         <i class="bi bi-chevron-right text-muted small"></i>

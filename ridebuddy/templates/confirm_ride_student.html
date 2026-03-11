@@ -164,6 +164,7 @@
     .tag-host { background: #e7f9ed; color: #10b981; }
     .tag-owner { background: #fffbeb; color: #f59e0b; }
     .tag-rider { background: #eff6ff; color: #3b82f6; }
+    .tag-picked { background: #f3e8ff; color: #a855f7; }
 
     /* Action Bar (Previous Style) */
     .action-bar-v2 {
@@ -197,6 +198,15 @@
         color: #64748b;
         border: 1px solid #e2e8f0;
         margin-top: 5px;
+    }
+    
+    #infoModal {
+        z-index: 25000;
+        scrollbar-width: none;
+    }
+
+    #infoModal::-webkit-scrollbar {
+        display: none;
     }
 </style>
 {% endblock %}
@@ -327,11 +337,14 @@
 <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
 <script>
     let currentRideId;
+    let hasVehicle = false;
     let rideData = null;
+    let mapInitialized = false;
 
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         currentRideId = urlParams.get('ride_id');
+        hasVehicle = urlParams.get('has_vehicle') === 'true';
 
         if (!currentRideId) {
             showToast("Invalid Ride ID", "error");
@@ -340,6 +353,8 @@
         }
 
         fetchRideDetails();
+        // Periodic sync
+        setInterval(fetchRideDetails, 10000);
     });
 
     async function fetchRideDetails() {
@@ -356,10 +371,17 @@
                 window.userBooking = data.user_booking;
                 window.rideMapData = data.map_data;
                 
-                // Trigger dynamic UI rendering if targets exist
-                if (typeof renderRideDetails === 'function') renderRideDetails();
+                renderRideDetails();
                 
-                initMap();
+                const blackStyle = { color: '#202124', weight: 7, opacity: 0.9 };
+                
+                if (!mapInitialized) {
+                    initMap(blackStyle);
+                    mapInitialized = true;
+                } else if (window.rideMapData) {
+                    rideMapManager.renderRideData(window.rideMapData, blackStyle);
+                    drawUserRoute();
+                }
                 
                 // UI states
                 document.getElementById('loadingState')?.classList.add('d-none');
@@ -378,51 +400,28 @@
         }
     }
 
-    function updateProviderCard() {
-        const toggle = document.getElementById('provideVehicleToggle');
-        const card = document.getElementById('providerToggleCard');
-        if (toggle && toggle.checked) {
-            card?.classList.add('active');
-            const btn = document.getElementById('confirmJoinBtn');
-            if (btn) btn.innerHTML = '<i class="bi bi-car-front me-2"></i>Join & Provide Vehicle';
-        } else {
-            card?.classList.remove('active');
-            const btn = document.getElementById('confirmJoinBtn');
-            if (btn) btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirm Join';
-        }
-    }
-
-    function initMap() {
-        if (!rideData) return;
-        
-        rideMapManager.init('rideMap'); // Updated ID from your layout
-
-        // 1. Render existing ride data (Black Route)
-        if (window.rideMapData) {
-            const originalColor = rideMapManager.config.routingStyles.main.color;
-            rideMapManager.config.routingStyles.main.color = '#202124';
-            rideMapManager.renderRideData(window.rideMapData);
-            rideMapManager.config.routingStyles.main.color = originalColor;
-        }
-
-        // 2. Overlay YOUR own route (Red Route)
+    function drawUserRoute() {
         if (window.userBooking && window.userBooking.start_latlon && window.userBooking.end_latlon) {
             const b = window.userBooking;
             const myName = "{{ user.get_full_name|default:user.username|escapejs }} (You)";
 
+            // Pickup: Small minimalist dot
             rideMapManager.updateRideMarker('user_pickup', b.start_latlon.lat, b.start_latlon.lng, {
-                icon: '/static/assets/media/memberred.png',
+                small: true,
+                color: '#3b82f6',
                 popup: `<b>${myName} (Pickup Point)</b>`
             });
+            // Drop: Small minimalist dot
             rideMapManager.updateRideMarker('user_drop', b.end_latlon.lat, b.end_latlon.lng, {
-                icon: '/static/assets/media/memberred.png',
+                small: true,
+                color: '#3b82f6',
                 popup: `<b>${myName} (Destination Point)</b>`
             });
 
             const ctrl = L.Routing.control({
-                waypoints: [L.latLng(b.start_latlon), L.latLng(b.end_latlon)],
+                waypoints: [L.latLng(b.start_latlon.lat, b.start_latlon.lng), L.latLng(b.end_latlon.lat, b.end_latlon.lng)],
                 lineOptions: {
-                    styles: [{ color: '#dc3545', opacity: 0.8, weight: 6 }]
+                    styles: [{ color: '#3b82f6', opacity: 1, weight: 2 }] // Vibrant Blue stands out on black
                 },
                 fitSelectedRoutes: false, 
                 createMarker: () => null,
@@ -433,6 +432,123 @@
             
             rideMapManager.routingControls.push(ctrl);
         }
+    }
+
+    function renderRideDetails() {
+        if (!rideData) return;
+
+        // Update basic stats
+        document.getElementById('seatCounter').textContent = `${rideData.joined_passenger_count} / ${rideData.total_seats} Seats`;
+        document.getElementById('rideStatusText').textContent = rideData.status.toUpperCase();
+        document.getElementById('rideTypeText').textContent = rideData.ride_type.toUpperCase();
+        document.getElementById('routeSummaryText').textContent = rideData.route_summary;
+        
+        // Wait Left Timer Logic
+        const created = new Date(rideData.created_at);
+        const now = new Date();
+        const diffMins = Math.floor((now - created) / 60000);
+        const remaining = Math.max(0, rideData.waiting_threshold - diffMins);
+        document.getElementById('waitLeftText').textContent = remaining > 0 ? `${remaining}m` : "Soon";
+        
+        // Rider Zone
+        const riderZone = document.getElementById('riderZone');
+        const r = rideData.rider;
+        if (r && r.type !== 'Searching') {
+            const photo = r.photo ? `<img src="${r.photo}" class="w-100 h-100 object-fit-cover">` : r.name[0];
+            riderZone.innerHTML = `
+                <div class="p-card-v2 d-flex align-items-center gap-3" onclick="openProfileDetail('rider')">
+                    <div class="avatar-sq bg-primary text-white">${photo}</div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">${r.name}</div>
+                        <div class="x-small text-muted">${r.type} • ${rideData.vehicle?.model || 'No Vehicle'}</div>
+                    </div>
+                    <i class="bi bi-chevron-right text-muted small"></i>
+                </div>
+            `;
+        } else {
+            riderZone.innerHTML = `
+                <div class="p-card-v2 d-flex align-items-center gap-3 border-dashed">
+                    <div class="avatar-sq opacity-50"><i class="bi bi-radar"></i></div>
+                    <div>
+                        <div class="fw-bold text-muted small">Searching for Rider...</div>
+                        <div class="x-small text-muted">Scanning nearby community members</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Passengers Zone
+        const passZone = document.getElementById('passengersZone');
+        const passengers = rideData.passengers.filter(p => !p.is_rider);
+        if (passengers.length === 0) {
+            passZone.innerHTML = `<div class="text-center py-5 text-muted small opacity-50">Wait for community members to join...</div>`;
+        } else {
+            passZone.innerHTML = passengers.map(p => `
+                <div class="p-card-v2 d-flex align-items-center gap-3" onclick="openProfileDetail('passenger', ${p.booking_id})">
+                    <div class="avatar-sq">${p.photo ? `<img src="${p.photo}" class="w-100 h-100 object-fit-cover">` : p.initial}</div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold d-flex align-items-center gap-2">
+                            ${p.name}
+                            ${p.is_host ? '<span class="role-tag tag-host">Host</span>' : ''}
+                            ${p.is_owner ? '<span class="role-tag tag-owner">Owner</span>' : ''}
+                            ${p.is_picked_up ? '<span class="role-tag tag-picked">Picked Up</span>' : ''}
+                        </div>
+                        <div class="x-small text-muted text-truncate">${p.pickup.split(',')[0]} → ${p.drop.split(',')[0]}</div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold small">৳${p.fare}</div>
+                        <i class="bi bi-chevron-right text-muted x-small"></i>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Map Legend
+        if (window.rideMapData) {
+            const legendZone = document.getElementById('mapLegend');
+            legendZone.innerHTML = window.rideMapData.markers.filter(m => m.type !== 'drop').map(m => `
+                <div class="legend-item-v3">
+                    <img src="${m.icon}" class="legend-icon-img">
+                    <span>${m.name.split(' ')[0]}</span>
+                </div>
+            `).join('');
+
+            // Add your route to legend
+            legendZone.innerHTML += `
+                <div class="legend-item-v3">
+                    <div style="width: 12px; height: 12px; border-radius: 50%; background-color: #3b82f6;"></div>
+                    <span>Your Route</span>
+                </div>
+            `;
+        }
+
+        updateProviderState();
+    }
+
+    function updateProviderState() {
+        const btn = document.getElementById('confirmJoinBtn');
+        if (!btn) return;
+        
+        // If hasVehicle is true from URL, show provider button
+        if (hasVehicle) {
+            btn.innerHTML = '<i class="bi bi-car-front me-2"></i>Join & Provide Vehicle';
+        } else {
+            btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirm Join';
+        }
+    }
+
+    function initMap(style = null) {
+        if (!rideData) return;
+        
+        rideMapManager.init('rideMap'); // Updated ID from your layout
+
+        // 1. Render existing ride data (Black Route)
+        if (window.rideMapData) {
+            rideMapManager.renderRideData(window.rideMapData, style);
+        }
+
+        // 2. Overlay YOUR own route (Red Route)
+        drawUserRoute();
 
         // 3. Final Frame
         setTimeout(() => {
@@ -454,8 +570,6 @@
             showToast("Your booking was not found. Please reload.", "error");
             return;
         }
-
-        const provideVehicle = document.getElementById('provideVehicleToggle')?.checked || false;
         
         showToast("Joining ride...", "info");
         
@@ -469,7 +583,7 @@
                 body: JSON.stringify({
                     ride_id: currentRideId,
                     booking_id: bookingId,
-                    use_own_vehicle: provideVehicle,
+                    use_own_vehicle: hasVehicle,
                     drive_mode: "{{ student.driver_type }}" === 'has_driver' ? 'driver' : 'self'
                 })
             });

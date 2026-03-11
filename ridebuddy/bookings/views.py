@@ -309,8 +309,12 @@ def cancel_activity_api(request):
             # Update Ride Status (Start/Complete)
             new_status = data.get('status')
             ride = Ride.objects.get(id=act_id)
-            # Ensure user is the assigned rider
-            if not (ride.rider and ride.rider.user == request.user) and not (ride.rider and ride.rider.employer_student.user == request.user):
+            # Ensure user is authorized (Rider, Employer of Rider, or the Host/Creator)
+            is_authorized = (ride.rider and ride.rider.user == request.user) or \
+                            (ride.rider and ride.rider.employer_student.user == request.user) or \
+                            (ride.created_by.user == request.user)
+            
+            if not is_authorized:
                 return JsonResponse({'success': False, 'message': 'Unauthorized to update this ride.'}, status=403)
             
             if new_status not in ['started', 'completed']:

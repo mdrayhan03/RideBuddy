@@ -39,7 +39,6 @@ def format_ride(ride, similarity=None, ref_booking=None, current_user=None):
 
         rider_info['is_host'] = (host_student and host_student.user == user)
         rider_info['is_owner'] = (vehicle_owner_user and vehicle_owner_user == user)
-
         if host_student and host_student.user == user:
             is_self_drive = True
             rider_info['type'] = 'Self Drive (Host)'
@@ -49,6 +48,8 @@ def format_ride(ride, similarity=None, ref_booking=None, current_user=None):
         else:
             rider_info['type'] = 'Rider / Driver'
             rider_info['is_hired'] = True
+            
+        rider_info['is_self_drive'] = is_self_drive
 
     # Vehicle Info
     has_vehicle = ride.vehicle is not None
@@ -95,6 +96,8 @@ def format_ride(ride, similarity=None, ref_booking=None, current_user=None):
             'end_latlon': b.end_latlon,
             'pickup_data': b.pickup,
             'dropoff_data': b.dropoff,
+            'status': b.status,
+            'is_picked_up': b.pickup is not None,
             'is_user': (p_user == current_user) if current_user else False
         })
 
@@ -219,6 +222,9 @@ def create_ride(student, booking_id, drive_mode='self', use_own_vehicle=True, ge
     booking.save()
     
     ride.save()
+    
+    # Ensure owner fare is 0
+    update_owner_fare(ride)
 
     return {
         'success': True,
@@ -274,6 +280,9 @@ def join_ride(student, ride_id, booking_id, use_own_vehicle=False, drive_mode='s
     booking.save()
     
     ride.save()
+    
+    # Ensure owner fare is 0
+    update_owner_fare(ride)
 
     return {
         'success': True, 
@@ -335,16 +344,16 @@ def get_ride_map_data(ride):
                 'is_live': True
             })
 
-    # B. Passenger Markers (Start & End Points)
+    # B. Passenger Markers (Start & End Points + Live Location)
     passenger_colors = ['memberblue.png', 'memberred.png']
+    live_passenger_colors = ['liveblue.png', 'livered.png']
     color_idx = 0
     
-    # Track assigned markers to avoid duplicates if needed
     for b in bookings:
         student = b.student
         p_user = student.user
         
-        # LOGIC: If student is also the rider, ignore their specific booking markers/routing
+        # LOGIC: If student is also the rider, ignore their specific booking markers
         # We focus on the 'vehiclemarker' for the rider's actual live position instead.
         if rider_user and p_user == rider_user:
             continue
@@ -352,19 +361,24 @@ def get_ride_map_data(ride):
         is_host = (host_student == student)
         is_owner = has_vehicle and hasattr(ride.vehicle, 'student_owner') and (ride.vehicle.student_owner == student)
         
-        # Icon Priority: Owner (Yellow) > Host (Green) > Others (Blue/Red)
-        if is_owner: # Includes Owner+Host case
+        # Icon Color Logic: Owner (Yellow) > Host (Green) > Others (Blue/Red)
+        if is_owner:
             icon_name = 'memberyellow.png'
+            live_icon_name = 'liveyellow.png'
         elif is_host:
             icon_name = 'membergreen.png'
+            live_icon_name = 'livegreen.png'
         else:
-            icon_name = passenger_colors[color_idx % len(passenger_colors)]
+            idx = color_idx % len(passenger_colors)
+            icon_name = passenger_colors[idx]
+            live_icon_name = live_passenger_colors[idx]
             color_idx += 1
             
         icon_url = f'/static/assets/media/{icon_name}'
+        live_icon_url = f'/static/assets/media/{live_icon_name}'
         name_display = p_user.get_full_name() or p_user.username
         
-        # Record start and end points for every passenger
+        # 1. Static Markers (Pickup & Drop)
         if b.start_latlon:
             markers.append({
                 'id': f'booking_start_{b.id}',
@@ -385,6 +399,21 @@ def get_ride_map_data(ride):
                 'lng': b.end_latlon.get('lng'),
                 'icon': icon_url,
                 'popup': f"<b>{name_display} (Destination)</b><br>{b.end_location}"
+            })
+
+        # 2. Live Location Marker
+        # Fetch latest location from UserLocation for the passenger
+        latest_p_loc = p_user.locations.order_by('-updated_at').first()
+        if latest_p_loc:
+            markers.append({
+                'id': f'live_user_{p_user.id}',
+                'type': 'student_live',
+                'name': name_display,
+                'lat': latest_p_loc.latitude,
+                'lng': latest_p_loc.longitude,
+                'icon': live_icon_url,
+                'popup': f"<b>{name_display}</b><br>Live Tracking",
+                'is_live': True
             })
 
     # 3. Routing Data (LRM Waypoints)
@@ -433,3 +462,17 @@ def calculate_wait_left(ride):
     
     remaining = ride.waiting_threshold - elapsed_minutes
     return max(0, math.floor(remaining))
+
+def update_owner_fare(ride):
+    """
+    If any booking in the ride belongs to the owner of the ride's vehicle, sets its fare to 0.
+    """
+    if not ride.vehicle or not hasattr(ride.vehicle, 'student_owner') or not ride.vehicle.student_owner:
+        return
+        
+    owner_student = ride.vehicle.student_owner
+    owner_bookings = ride.bookings.filter(student=owner_student)
+    for b in owner_bookings:
+        if b.fare != Decimal('0.00'):
+            b.fare = Decimal('0.00')
+            b.save()

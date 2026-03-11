@@ -53,6 +53,16 @@
         font-weight: 700;
         flex-shrink: 0;
     }
+
+    
+    #infoModal {
+        z-index: 25000;
+        scrollbar-width: none;
+    }
+
+    #infoModal::-webkit-scrollbar {
+        display: none;
+    }
 </style>
 {% endblock %}
 
@@ -354,11 +364,44 @@
         rideMapManager.renderRideData(mapData);
     }
 
-    function createNewShareRide() {
-        showToast("Opening Create Ride menu...", "info");
-        setTimeout(() => {
-            navigateTo('share_ride_student');
-        }, 500);
+    async function createNewShareRide() {
+        const bookingId = (window.appState && appState.currentBookingId) || localStorage.getItem('last_booking_id');
+        if (!bookingId) {
+            showToast("No active booking found. Please search again.", "error");
+            return;
+        }
+
+        const useOwnVehicle = RideSearch.filters.hasVehicle;
+        const genderPref = RideSearch.filters.gender;
+        const driveMode = "{{ student.driver_type }}" === 'has_driver' ? 'driver' : 'self';
+
+        showToast("Creating your shared ride...", "info");
+        
+        try {
+            const result = await window.RideBuddyAPI.call(routes['create_ride_api'], 'POST', {
+                booking_id: bookingId,
+                use_own_vehicle: useOwnVehicle,
+                drive_mode: driveMode,
+                gender_preference: genderPref
+            });
+
+            if (result.success) {
+                showToast("Success! Redirecting to host dashboard...", "success");
+                appState.rideStatus = 'hosting';
+                appState.currentRideId = result.ride_id;
+                saveState();
+                
+                setTimeout(() => {
+                    navigateTo('ride_host_student');
+                }, 1000);
+            } else {
+                showToast(result.message || "Failed to create ride", "error");
+                RideSearch.fetchAndRender();
+            }
+        } catch (err) {
+            console.error("Create Ride Error:", err);
+            showToast("An error occurred. Please try again.", "error");
+        }
     }
 </script>
 {% endblock %}

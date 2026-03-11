@@ -164,6 +164,8 @@
     .tag-host { background: #e7f9ed; color: #10b981; }
     .tag-owner { background: #fffbeb; color: #f59e0b; }
     .tag-rider { background: #eff6ff; color: #3b82f6; }
+    .tag-self { background: #eef2ff; color: #6366f1; }
+    .tag-picked { background: #dcfce7; color: #15803d; border: 1px solid rgba(21, 128, 61, 0.1); }
 
     /* Action Bar (Previous Style) */
     .action-bar-v2 {
@@ -197,6 +199,15 @@
         color: #64748b;
         border: 1px solid #e2e8f0;
         margin-top: 5px;
+    }
+
+    #infoModal {
+        z-index: 25000;
+        scrollbar-width: none;
+    }
+
+    #infoModal::-webkit-scrollbar {
+        display: none;
     }
 </style>
 {% endblock %}
@@ -394,7 +405,11 @@
                 <div class="p-card-v2 d-flex align-items-center gap-3" onclick="openProfileDetail('rider')">
                     <div class="avatar-sq bg-primary text-white">${photo}</div>
                     <div class="flex-grow-1">
-                        <div class="fw-bold">${r.name}</div>
+                        <div class="fw-bold d-flex align-items-center gap-2">
+                            ${r.name}
+                            ${r.is_self_drive ? '<span class="role-tag tag-self">Self Drive</span>' : ''}
+                            ${r.is_owner ? '<span class="role-tag tag-owner">Owner</span>' : ''}
+                        </div>
                         <div class="x-small text-muted">${r.type} • ${ride.vehicle?.model || 'No Vehicle'}</div>
                     </div>
                     <i class="bi bi-chevron-right text-muted small"></i>
@@ -426,6 +441,7 @@
                             ${p.name}
                             ${p.is_host ? '<span class="role-tag tag-host">Host</span>' : ''}
                             ${p.is_owner ? '<span class="role-tag tag-owner">Owner</span>' : ''}
+                            ${(p.pickup_data && p.pickup_data.pickup === 'done') ? '<span class="role-tag tag-picked">Picked Up</span>' : ''}
                         </div>
                         <div class="x-small text-muted text-truncate">${p.pickup.split(',')[0]} → ${p.drop.split(',')[0]}</div>
                     </div>
@@ -442,7 +458,6 @@
         const userFullName = '{{ request.user.get_full_name|default:request.user.username|escapejs }}';
         if (r && r.name === userFullName) {
             startBtn.classList.remove('d-none');
-            startBtn.disabled = ride.joined_passenger_count < 2;
         } else {
             startBtn.classList.add('d-none');
         }
@@ -497,20 +512,41 @@
     }
 
     async function goLiveAsRider() {
-        if (!confirm("Start ride now? Participants will be notified.")) return;
+        if (!confirm("Switch to Rider mode and view your activity?")) return;
+        
+        showToast("Switching to Rider mode...", "info");
         try {
-            await fetch("{% url 'accounts:switch_role_api' %}", {
+            // 1. Switch session role to rider
+            const switchResp = await fetch("{% url 'accounts:switch_role_api' %}", {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
                 body: JSON.stringify({ role: 'rider' })
             });
-            await fetch(routes['cancel_activity_api'], {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
-                body: JSON.stringify({ id: currentRide.id, type: 'ride_status', status: 'started' })
-            });
-            window.location.href = routes['activity_rider'];
-        } catch (e) { showToast("Error", "error"); }
+            const switchData = await switchResp.json();
+            
+            if (switchData.success) {
+                showToast("Role switched!", "success");
+                
+                // Store ride ID for the rider view if it's currently selected
+                if (currentRide && currentRide.id) {
+                    localStorage.setItem('currentRideId', currentRide.id);
+                    if (window.appState) {
+                        appState.currentRideId = currentRide.id;
+                        saveState();
+                    }
+                }
+                
+                // Redirect directly to the activity_rider page
+                setTimeout(() => {
+                    window.location.href = routes['activity_rider'];
+                }, 800);
+            } else {
+                showToast(switchData.message || "Failed to switch role", "error");
+            }
+        } catch (e) { 
+            console.error("Switch Role Error:", e);
+            showToast("Connection error. Please try again.", "error"); 
+        }
     }
 
     async function initiateCancellation() {
