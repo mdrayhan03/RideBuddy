@@ -141,7 +141,8 @@ def format_ride(ride, similarity=None, ref_booking=None, current_user=None):
         'scheduled_start': ride.scheduled_start.isoformat() if ride.scheduled_start else None,
         'waiting_threshold': ride.waiting_threshold,
         'ac_available': vehicle_data['ac'],
-        'created_at': ride.created_at.isoformat()
+        'created_at': ride.created_at.isoformat(),
+        'gender_pref': bookings.filter(student=host_student).first().preference.get('gender', 'any') if host_student and bookings.filter(student=host_student).exists() else 'any'
     }
 
 def get_active_ride_for_user(user):

@@ -5,7 +5,7 @@ const RideSearch = {
     filters: {
         gender: 'any',
         ac: 'any',
-        hasVehicle: true
+        hasVehicle: false
     },
 
     async fetchAndRender() {
@@ -39,7 +39,8 @@ const RideSearch = {
             // Apply all filters (Gender and AC)
             const filteredRides = activeRides.filter(ride => {
                 // 1. Gender Filter
-                const genderMatch = (this.filters.gender === 'any') || (ride.gender_pref === this.filters.gender);
+                const rideGender = ride.gender_pref || 'any';
+                const genderMatch = (this.filters.gender === 'any') || (rideGender === this.filters.gender);
 
                 // 2. AC Filter (Only for car types)
                 let acMatch = true;
@@ -51,13 +52,12 @@ const RideSearch = {
                 // 3. Vehicle Provider Filter
                 let vehicleMatch = true;
                 if (this.filters.hasVehicle) {
-                    // Hide rides that already have a vehicle or an assigned rider
-                    // We only want 'open' requests that need a vehicle
+                    // IF I want to be the provider, hide rides that already have a vehicle/rider
                     const alreadyHasRider = ride.rider && ride.rider.type !== 'Searching';
                     const alreadyHasVehicle = ride.has_vehicle;
-
                     vehicleMatch = (!alreadyHasRider && !alreadyHasVehicle);
                 }
+                // Else (hasVehicle is false): Show everything, I just want to join.
 
                 return genderMatch && acMatch && vehicleMatch;
             });
@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('studentRidePage')) {
         // Load saved vehicle toggle state
         const storedValue = localStorage.getItem('userHasVehicleWithMe');
-        const savedHasVehicle = (storedValue === null) ? true : (storedValue === 'true');
+        const savedHasVehicle = (storedValue === null) ? false : (storedValue === 'true');
         RideSearch.filters.hasVehicle = savedHasVehicle;
 
         const toggle = document.getElementById('userHasVehicleToggle');
