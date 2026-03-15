@@ -40,6 +40,7 @@ class MapManager {
 
         const center = options.center || this.config.defaultCenter;
         const zoom = options.zoom || this.config.defaultZoom;
+        const tileUrl = options.tileUrl || this.config.tileUrl;
 
         this.map = L.map(elementId, {
             zoomControl: true,
@@ -47,7 +48,7 @@ class MapManager {
             ...options
         }).setView(center, zoom);
 
-        this.tileLayer = L.tileLayer(this.config.tileUrl).addTo(this.map);
+        this.tileLayer = L.tileLayer(tileUrl).addTo(this.map);
 
         return this.map;
     }

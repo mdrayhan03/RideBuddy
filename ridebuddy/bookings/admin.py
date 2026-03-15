@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.urls import path
+from django.template.response import TemplateResponse
 from .models import Booking, Discount
 
 @admin.register(Booking)
@@ -7,6 +9,27 @@ class BookingAdmin(admin.ModelAdmin):
     list_filter = ('booking_type', 'status', 'created_at')
     search_fields = ('student__user__username', 'start_location', 'end_location')
     readonly_fields = ('created_at', 'updated_at')
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                '<path:object_id>/admin-booking-view/',
+                self.admin_site.admin_view(self.admin_booking_view),
+                name='admin_booking_view',
+            ),
+        ]
+        return custom_urls + urls
+
+    def admin_booking_view(self, request, object_id):
+        booking = self.get_object(request, object_id)
+        context = dict(
+            self.admin_site.each_context(request),
+            title="Booking Map",
+            booking=booking,
+            object_id=object_id,
+        )
+        return TemplateResponse(request, "admin/bookings/booking/admin_booking.html", context)
 
 @admin.register(Discount)
 class DiscountAdmin(admin.ModelAdmin):

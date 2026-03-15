@@ -51,6 +51,20 @@ def format_ride(ride, similarity=None, ref_booking=None, current_user=None):
             
         rider_info['is_self_drive'] = is_self_drive
 
+    elif ride.vehicle and hasattr(ride.vehicle, 'student_owner') and ride.vehicle.student_owner:
+        user = ride.vehicle.student_owner.user
+        rider_info['name'] = user.get_full_name() or user.username
+        rider_info['photo'] = user.profile_picture.url if user.profile_picture else None
+        rider_info['phone'] = user.phone_no
+        rider_info['is_host'] = (host_student and host_student.user == user)
+        rider_info['is_owner'] = True
+        if host_student and host_student.user == user:
+            rider_info['type'] = 'Self Drive (Host)'
+            rider_info['is_self_drive'] = True
+        else:
+            rider_info['type'] = 'Vehicle Owner'
+            rider_info['is_self_drive'] = False
+
     # Vehicle Info
     has_vehicle = ride.vehicle is not None
     vehicle_data = {

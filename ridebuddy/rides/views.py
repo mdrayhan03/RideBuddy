@@ -123,14 +123,14 @@ def get_ride_details_api(request, ride_id):
     Returns detailed JSON data for a specific ride.
     """
     try:
-        # Get student profile
-        student = request.user.student_profile
+        # Handle both admin and student access safely
+        student = getattr(request.user, 'student_profile', None)
         ride = Ride.objects.select_related('rider', 'vehicle', 'rider__user').prefetch_related('bookings', 'bookings__student__user').get(id=ride_id)
         
         # Optional: Get extra booking details for map routing
         booking_info = None
         user_booking_id = request.GET.get('booking_id')
-        if user_booking_id:
+        if user_booking_id and student:
             try:
                 b = Booking.objects.get(id=user_booking_id, student=student)
                 booking_info = {
