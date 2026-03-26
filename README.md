@@ -11,6 +11,8 @@ RideBuddy is an ultra-premium, community-focused ride-sharing platform designed 
 - **Community Safety**: Built for verified members. Features include "Verified Member Matching" and gender-priority filters.
 - **Interactive Matching**: Real-time ride requests and status updates for both Riders and Members.
 - **Comprehensive Profiles**: Detailed member and vehicle registration with real-time photo capture (ID Card & License).
+- **Smart Ride Allocation**: Advanced geospatial matching utilizing the Haversine formula for strict 500m radius proximity mapping between passengers and vehicle providers.
+- **Dynamic Preferences**: Live-filtering by vehicle type (Car/Bike) and AC availability, tightly coupled with robust backend validation mechanisms.
 - **Responsive Design**: Mobile-first architecture that looks stunning on every screen size.
 
 ---
