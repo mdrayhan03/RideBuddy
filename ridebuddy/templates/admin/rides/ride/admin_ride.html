@@ -60,10 +60,12 @@
                 <span class="label">Assigned Rider</span>
                 <span class="value" id="rRider">N/A</span>
             </div>
+        {% if not is_security_officer %}
             <div class="info-item">
                 <span class="label">Total Fare</span>
                 <span class="value" id="rFare">৳0</span>
             </div>
+        {% endif %}
             <div class="info-item">
                 <span class="label">Vehicle</span>
                 <span class="value" id="rVehicle">N/A</span>
@@ -81,7 +83,7 @@
                     <th>Role</th>
                     <th>Pickup</th>
                     <th>Dropoff</th>
-                    <th>Fare</th>
+                    {% if not is_security_officer %}<th>Fare</th>{% endif %}
                     <th>Status</th>
                 </tr>
             </thead>
@@ -137,7 +139,9 @@
                     document.getElementById('rVehicle').textContent = 'N/A';
                 }
             }
-            document.getElementById('rFare').textContent = '৳' + (ride.total_fare || 0);
+            if (document.getElementById('rFare')) {
+                document.getElementById('rFare').textContent = '৳' + (ride.total_fare || 0);
+            }
 
             let tbody = document.querySelector('#bookingsTable tbody');
             let html = '';
@@ -156,7 +160,7 @@
                         <td><span class="badge badge-primary">${role}</span></td>
                         <td><small>${p.pickup}</small></td>
                         <td><small>${p.drop}</small></td>
-                        <td><strong>৳${p.fare || 0}</strong></td>
+                        {% if not is_security_officer %}<td><strong>৳${p.fare || 0}</strong></td>{% endif %}
                         <td><span class="badge ${status === 'Waiting' ? 'badge-warning' : 'badge-success'}">${status}</span></td>
                     </tr>`;
                 }

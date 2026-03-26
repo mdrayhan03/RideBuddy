@@ -39,7 +39,7 @@ const RideSearch = {
             // Apply all filters (Gender and AC)
             const filteredRides = activeRides.filter(ride => {
                 // 1. Gender Filter
-                const rideGender = ride.gender_pref || 'any';
+                const rideGender = ride.gender || 'any';
                 const genderMatch = (this.filters.gender === 'any') || (rideGender === this.filters.gender);
 
                 // 2. AC Filter (Only for car types)
@@ -253,12 +253,18 @@ const RideSearch = {
     }
 };
 
-window.selectFilter = (category, value, element) => {
-    // Condition to freeze: Student MUST have vehicle AND toggle MUST be true
-    const isFrozen = category === 'ac' && RideSearch.filters.hasVehicle && window.studentHasVehicle;
+window.selectFilter = async (category, value, element) => {
+    // Condition to freeze AC
+    const isFrozenAC = category === 'ac' && (RideSearch.filters.ride_type === 'bike' || (RideSearch.filters.hasVehicle && window.studentHasVehicle));
+    const isFrozenRideType = category === 'ride_type' && RideSearch.filters.hasVehicle && window.studentHasVehicle;
 
-    if (isFrozen) {
-        showToast('AC Filter is fixed to match your car.', 'warning');
+    if (isFrozenAC) {
+        showToast('AC Filter cannot be changed.', 'warning');
+        return;
+    }
+
+    if (isFrozenRideType) {
+        showToast('Ride type is fixed to your vehicle.', 'warning');
         return;
     }
 
@@ -269,20 +275,31 @@ window.selectFilter = (category, value, element) => {
 
     // 2. State: Update the filter state
     RideSearch.filters[category] = value;
+    if(category === 'ride_type') {
+        appState.selectedRideType = value;
+        saveState();
+    }
 
-    // 3. Logic: Fetch new filtered results
-    RideSearch.fetchAndRender();
-    showToast(`Filtering for ${value} ${category}...`, 'info');
-
-    // 4. Persistence: Update DB if we have an active booking
+    // 3. Persistence: Update DB if we have an active booking BEFORE fetching matching rides!
     const bId = (window.appState && appState.currentBookingId) || localStorage.getItem('last_booking_id');
     if (bId) {
         console.log("Syncing Pref to DB:", category, value);
-        window.RideBuddyAPI.call(routes['update_booking_preferences_api'], 'POST', {
-            booking_id: bId,
-            preferences: { [category]: value }
-        }).catch(err => console.error("Pref Sync Error:", err));
+        try {
+            await window.RideBuddyAPI.call(routes['update_booking_preferences_api'], 'POST', {
+                booking_id: bId,
+                preferences: { [category]: value }
+            });
+        } catch (err) {
+            console.error("Pref Sync Error:", err);
+        }
     }
+
+    // 4. Logic: Fetch new filtered results (after DB is synced)
+    if (category === 'ride_type') {
+        RideSearch.updateACFilterUI(); // Since ride type changed, AC might be disabled
+    }
+    RideSearch.fetchAndRender();
+    showToast(`Filtering for ${value} ${category}...`, 'info');
 };
 
 window.toggleUserVehicle = (hasVehicle) => {
@@ -297,8 +314,21 @@ window.toggleUserVehicle = (hasVehicle) => {
     localStorage.setItem('userHasVehicleWithMe', hasVehicle);
 
     let prefAC = 'any';
+    let prefType = RideSearch.filters.ride_type;
+
     if (hasVehicle) {
         showToast('You are now set as a vehicle provider.', 'success');
+        
+        // Auto-select type based on vehicle
+        if (typeof window.studentVehicleType !== 'undefined') {
+            prefType = window.studentVehicleType.toLowerCase();
+            RideSearch.filters.ride_type = prefType;
+            if (window.appState) {
+                appState.selectedRideType = prefType;
+                saveState();
+            }
+        }
+
         // Freeze AC filter to match user's vehicle
         if (typeof window.studentVehicleAC !== 'undefined') {
             prefAC = window.studentVehicleAC ? 'true' : 'false';
@@ -317,7 +347,8 @@ window.toggleUserVehicle = (hasVehicle) => {
             booking_id: bId,
             preferences: {
                 hasVehicle: hasVehicle,
-                ac: RideSearch.filters.ac
+                ac: RideSearch.filters.ac,
+                ride_type: RideSearch.filters.ride_type
             }
         }).catch(err => console.error("Pref Sync Error:", err));
     }
@@ -328,6 +359,7 @@ window.toggleUserVehicle = (hasVehicle) => {
         if (hasVehicle) vOptions.classList.add('animate-slide-up');
     }
 
+    if (typeof RideSearch.updateRideTypeFilterUI === 'function') RideSearch.updateRideTypeFilterUI();
     RideSearch.updateACFilterUI();
     RideSearch.fetchAndRender();
 };
@@ -337,10 +369,17 @@ RideSearch.updateACFilterUI = function () {
     if (!acContainer) return;
 
     const pills = acContainer.querySelectorAll('.type-pill');
-    const currentAcFilter = this.filters.ac;
+    let currentAcFilter = this.filters.ac;
 
-    // Condition to freeze: Student MUST have vehicle AND toggle MUST be true
-    const isFrozen = this.filters.hasVehicle && window.studentHasVehicle;
+    // Conditions to freeze
+    const isFrozenDueToVehicle = this.filters.hasVehicle && window.studentHasVehicle;
+    const isFrozenDueToBike = this.filters.ride_type === 'bike';
+    const isFrozen = isFrozenDueToVehicle || isFrozenDueToBike;
+
+    if (isFrozenDueToBike) {
+        currentAcFilter = 'any';
+        this.filters.ac = 'any';
+    }
 
     pills.forEach(pill => {
         const onclickText = pill.getAttribute('onclick') || '';
@@ -348,7 +387,7 @@ RideSearch.updateACFilterUI = function () {
 
         if (matchesValue) {
             pill.classList.add('selected');
-            pill.style.opacity = '1';
+            pill.style.opacity = isFrozenDueToBike ? '0.4' : '1';
             pill.style.pointerEvents = isFrozen ? 'none' : 'auto';
         } else {
             pill.classList.remove('selected');
@@ -363,12 +402,34 @@ RideSearch.updateACFilterUI = function () {
     });
 };
 
+RideSearch.updateRideTypeFilterUI = function () {
+    const container = document.getElementById('rideTypeFilterContainer');
+    if (!container) return;
+
+    const pills = container.querySelectorAll('.type-pill');
+    const currentType = this.filters.ride_type;
+    const isFrozen = this.filters.hasVehicle && window.studentHasVehicle;
+
+    pills.forEach(pill => {
+        const matchesValue = (pill.getAttribute('onclick') || '').includes(`'${currentType}'`);
+        if (matchesValue) {
+            pill.classList.add('selected');
+            pill.style.opacity = '1';
+            pill.style.pointerEvents = isFrozen ? 'none' : 'auto';
+        } else {
+            pill.classList.remove('selected');
+            pill.style.opacity = isFrozen ? '0.4' : '1';
+            pill.style.pointerEvents = isFrozen ? 'none' : 'auto';
+        }
+    });
+};
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('studentRidePage')) {
-        // Load saved vehicle toggle state
-        const storedValue = localStorage.getItem('userHasVehicleWithMe');
-        const savedHasVehicle = (storedValue === null) ? false : (storedValue === 'true');
+        // Force vehicle provider to OFF by default
+        localStorage.removeItem('userHasVehicleWithMe');
+        const savedHasVehicle = false;
         RideSearch.filters.hasVehicle = savedHasVehicle;
 
         const toggle = document.getElementById('userHasVehicleToggle');
@@ -377,6 +438,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Apply initial freeze if needed
         if (savedHasVehicle && typeof window.studentVehicleAC !== 'undefined') {
             RideSearch.filters.ac = window.studentVehicleAC ? 'true' : 'false';
+        }
+        
+        // Initialize ride type pill based on app state
+        const rideTypeContainer = document.getElementById('rideTypeFilterContainer');
+        if (rideTypeContainer) {
+            const initialType = appState.selectedRideType || 'car';
+            RideSearch.filters.ride_type = initialType;
+            if (typeof RideSearch.updateRideTypeFilterUI === 'function') {
+                RideSearch.updateRideTypeFilterUI();
+            }
         }
 
         setTimeout(() => {

@@ -22,12 +22,20 @@ class BookingAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def admin_booking_view(self, request, object_id):
+        # Ensure the user has at least view permission for this model
+        if not self.has_view_or_change_permission(request):
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+            
         booking = self.get_object(request, object_id)
+        is_security_officer = request.user.groups.filter(name__iexact='security officer').exists()
+        
         context = dict(
             self.admin_site.each_context(request),
             title="Booking Map",
             booking=booking,
             object_id=object_id,
+            is_security_officer=is_security_officer,
         )
         return TemplateResponse(request, "admin/bookings/booking/admin_booking.html", context)
 

@@ -78,6 +78,11 @@ def update_booking_preferences(booking_id, student, preferences):
             booking.preference = {}
         
         # Merge new preferences into existing ones
+        # Special check for ride_type mapping
+        if 'ride_type' in preferences:
+            booking.ride_type = preferences['ride_type']
+            del preferences['ride_type']
+            
         booking.preference.update(preferences)
         booking.save()
         

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}History - IUB Ride Share{% endblock %}
+
+{% block content %}
+<div id="mainApp">
+    <div class="main-content" id="mainContent">
+        <div class="page active" id="studentHistoryPage">
+            <div class="p-4 fade-in">
+                <h4 class="fw-bold mb-4"><i class="bi bi-clock-history me-2"></i>Ride History</h4>
+                
+                <div id="historyLoading" class="text-center my-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+
+                <div id="historyList" style="display:none;">
+                    <!-- Dynamic history items will be loaded here -->
+                </div>
+                
+                <div id="historyEmpty" class="text-center text-muted my-4" style="display:none;">
+                    <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                    <p>No past rides found.</p>
+                </div>
+            </div>
+        </div>
+    </div><!-- Bottom Navigation -->
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    fetchHistory();
+});
+
+function fetchHistory() {
+    fetch('/history-api/')
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('historyLoading').style.display = 'none';
+        
+        if (data.success && data.history.length > 0) {
+            document.getElementById('historyList').style.display = 'block';
+            let html = '';
+            data.history.forEach(item => {
+                const date = new Date(item.date).toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric',
+                    hour: 'numeric', minute: '2-digit'
+                });
+                
+                let badgeClass = 'bg-secondary';
+                if(item.status === 'completed') badgeClass = 'status-completed';
+                if(item.status === 'cancelled' || item.status === 'rejected') badgeClass = 'status-cancelled text-white';
+                
+                const initials = item.driver_name !== "Unknown" ? item.driver_name.charAt(0).toUpperCase() : '?';
+                const fareDisplay = (item.status === 'completed' || item.type === 'hosting') ? `৳${item.fare}` : `<span class="text-decoration-line-through text-muted ms-1">৳${item.fare}</span>`;
+
+                html += `
+                    <div class="history-item" onclick="window.location.href='/individual_history/?id=${item.id}&type=${item.type}'">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <p class="mb-0 fw-500">${item.pickup} → ${item.drop}</p>
+                                <small class="text-muted">${date}</small>
+                            </div>
+                            <span class="status-badge ${badgeClass}">${item.status.charAt(0).toUpperCase() + item.status.slice(1)}</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm me-2 bg-primary text-white"
+                                    style="width: 30px; height: 30px; font-size: 0.8rem; line-height:30px; text-align:center;">${initials}</div>
+                                <small>${item.driver_name}</small>
+                            </div>
+                            <span class="fw-bold fs-6">${item.type === 'hosting' ? '<small class="text-success me-1">Earned</small>' : ''}${fareDisplay}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('historyList').innerHTML = html;
+        } else {
+            document.getElementById('historyEmpty').style.display = 'block';
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        document.getElementById('historyLoading').innerHTML = '<p class="text-danger">Failed to load history.</p>';
+    });
+}
+</script>
+    </div>
+{% endblock %}

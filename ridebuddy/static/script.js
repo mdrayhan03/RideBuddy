@@ -1207,4 +1207,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (appState.isLoggedIn && isHome) {
         initLocationTracking();
     }
+    
+    if (page.includes('home_student')) {
+        appState.selectedRideType = null;
+        saveState();
+        validateRideSearch();
+    }
 });

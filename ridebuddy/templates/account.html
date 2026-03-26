@@ -99,19 +99,6 @@
                         class="profile-avatar-main mb-3">
                     {% endif %}
                     <h5 class="fw-bold mb-1">{{ user.get_full_name|default:user.username }}</h5>
-                    
-                    <div class="d-flex justify-content-center gap-2 mt-2">
-                        {% if user.is_student %}
-                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill small">
-                            <i class="bi bi-mortarboard-fill me-1"></i> Student
-                        </span>
-                        {% endif %}
-                        {% if user.is_rider %}
-                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill small">
-                            <i class="bi bi-bicycle me-1"></i> Rider
-                        </span>
-                        {% endif %}
-                    </div>
                 </div>
 
                 <!-- Personal Details Section -->

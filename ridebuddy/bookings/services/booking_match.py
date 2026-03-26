@@ -85,14 +85,23 @@ class BookingMatcher:
 
     def check_preference(self, b1, b2):
         """
-        Ensures gender preferences are respected.
+        Ensures gender and AC preferences are respected.
         """
         pref1 = b1.preference.get('gender', 'any') if b1.preference else 'any'
         pref2 = b2.preference.get('gender', 'any') if b2.preference else 'any'
         
-        if pref1 == 'any' or pref2 == 'any':
-            return True
-        return pref1 == pref2
+        ac1 = b1.preference.get('ac', 'any') if b1.preference else 'any'
+        ac2 = b2.preference.get('ac', 'any') if b2.preference else 'any'
+        
+        if pref1 != 'any' and pref2 != 'any':
+            if pref1 != pref2:
+                return False
+                
+        if ac1 != 'any' and ac2 != 'any':
+            if str(ac1).lower() != str(ac2).lower():
+                return False
+                
+        return True
 
     def match(self):
         """

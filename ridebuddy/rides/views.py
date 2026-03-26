@@ -177,7 +177,7 @@ def create_ride_api(request):
             booking_id=booking_id,
             drive_mode=data.get('drive_mode', 'self'),
             use_own_vehicle=data.get('use_own_vehicle', True),
-            gender_pref=data.get('gender_preference', 'any')
+            gender=data.get('gender_preference', 'any')
         )
         
         return JsonResponse(result, status=200 if result['success'] else 400)

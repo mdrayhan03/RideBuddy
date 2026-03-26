@@ -108,6 +108,12 @@
                         <h6 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>Available Share Rides</h6>
                     </div>
 
+                    <!-- Ride Type Filter Pills -->
+                    <div class="ride-type-selector mb-2" id="rideTypeFilterContainer">
+                        <div class="type-pill" onclick="selectFilter('ride_type', 'car', this)">Car</div>
+                        <div class="type-pill" onclick="selectFilter('ride_type', 'bike', this)">Bike</div>
+                    </div>
+
                     <!-- Gender Filter Pills -->
                     <div class="ride-type-selector mb-2">
                         <div class="type-pill selected" onclick="selectFilter('gender', 'any', this)">Any</div>
@@ -131,7 +137,7 @@
                                 <p class="mb-0 x-small text-muted">I have my vehicle with me now</p>
                             </div>
                             <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="userHasVehicleToggle" onchange="toggleUserVehicle(this.checked)" checked>
+                                <input class="form-check-input" type="checkbox" id="userHasVehicleToggle" onchange="toggleUserVehicle(this.checked)">
                             </div>
                         </div>
                     </div>
@@ -299,6 +305,7 @@
 <script>
     window.studentHasVehicle = {{ student.has_vehicle|yesno:"true,false" }};
     window.studentVehicleAC = {{ student.vehicle.ac_available|yesno:"true,false" }};
+    window.studentVehicleType = "{{ student.vehicle.vehicle_type|default:'car' }}";
 
     document.addEventListener('DOMContentLoaded', () => {
         // Capture booking_id from URL

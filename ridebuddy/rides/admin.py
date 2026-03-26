@@ -23,11 +23,19 @@ class RideAdmin(admin.ModelAdmin):
         return custom_urls + urls
 
     def admin_ride_view(self, request, object_id):
+        # Ensure the user has at least view permission for this model
+        if not self.has_view_or_change_permission(request):
+            from django.core.exceptions import PermissionDenied
+            raise PermissionDenied
+            
         ride = self.get_object(request, object_id)
+        is_security_officer = request.user.groups.filter(name__iexact='security officer').exists()
+        
         context = dict(
             self.admin_site.each_context(request),
             title="Live Ride Map",
             ride=ride,
             object_id=object_id,
+            is_security_officer=is_security_officer,
         )
         return TemplateResponse(request, "admin/rides/ride/admin_ride.html", context)

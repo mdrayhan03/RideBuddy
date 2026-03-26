@@ -156,7 +156,7 @@ def format_ride(ride, similarity=None, ref_booking=None, current_user=None):
         'waiting_threshold': ride.waiting_threshold,
         'ac_available': vehicle_data['ac'],
         'created_at': ride.created_at.isoformat(),
-        'gender_pref': bookings.filter(student=host_student).first().preference.get('gender', 'any') if host_student and bookings.filter(student=host_student).exists() else 'any'
+        'gender': bookings.filter(student=host_student).first().preference.get('gender', 'any') if host_student and bookings.filter(student=host_student).exists() else 'any'
     }
 
 def get_active_ride_for_user(user):
@@ -179,7 +179,7 @@ def get_active_ride_for_user(user):
         
     return None
 
-def create_ride(student, booking_id, drive_mode='self', use_own_vehicle=True, gender_pref='any'):
+def create_ride(student, booking_id, drive_mode='self', use_own_vehicle=True, gender='any'):
     """
     Business logic for creating a ride.
     """
@@ -210,7 +210,7 @@ def create_ride(student, booking_id, drive_mode='self', use_own_vehicle=True, ge
     # Update booking preference with gender
     if not booking.preference:
             booking.preference = {}
-    booking.preference['gender_pref'] = gender_pref
+    booking.preference['gender'] = gender
     booking.save()
 
     # Create the Ride with creator student
