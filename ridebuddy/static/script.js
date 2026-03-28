@@ -1155,20 +1155,9 @@ document.addEventListener('click', (e) => {
 document.addEventListener('DOMContentLoaded', () => {
     updateProfileDisplays();
 
-    // Set active tab in bottom nav based on page filename
     const path = window.location.pathname;
     const segments = path.split('/').filter(s => s.length > 0);
     const page = segments[segments.length - 1] || 'index';
-
-    const navItems = document.querySelectorAll('.nav-item');
-    navItems.forEach(item => {
-        const tab = item.getAttribute('data-tab');
-        if (page.includes(tab)) {
-            item.classList.add('active');
-        } else {
-            item.classList.remove('active');
-        }
-    });
 
     // Special logic for activity page states
     if (page === 'activity_student') {
