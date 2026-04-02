@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Analytics Login - RideBuddy{% endblock %}
+
+{% block bottom_nav %}{% endblock %}
+
+{% block content %}
+<div class="auth-container d-flex align-items-center justify-content-center p-4" style="min-height: calc(100vh - 60px);">
+    <div class="auth-card mx-auto" style="max-width: 400px; width: 100%; padding: 2.5rem 2rem; background: #ffffff; border-radius: 16px; border: 1px solid #e0e0e0; box-shadow: 0 10px 30px rgba(0,0,0,0.08);">
+        
+        <div class="text-center mb-4">
+            <h3 class="fw-bold text-dark mb-1">
+                <i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Analytics Portal
+            </h3>
+            <p class="text-muted small">Authorized Personnel Only</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-danger py-2 small d-flex align-items-center mb-4" role="alert" style="background-color: #fff5f5; border-color: #ffc9c9; color: #e03131;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            {{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label text-dark small fw-bold">Username / Email</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 border-secondary-subtle"><i class="bi bi-person text-secondary"></i></span>
+                    <input type="text" name="username" class="form-control border-start-0 ps-0 bg-white text-dark border-secondary-subtle" placeholder="Enter identifier" required>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-dark small fw-bold">Password</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 border-secondary-subtle"><i class="bi bi-key text-secondary"></i></span>
+                    <input type="password" name="password" class="form-control border-start-0 ps-0 bg-white text-dark border-secondary-subtle" placeholder="Enter password" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="border-radius: 8px;">
+                Secure Login <i class="bi bi-arrow-right-short ms-1"></i>
+            </button>
+        </form>
+        
+        <div class="text-center mt-4">
+             <a href="{% url 'accounts:index' %}" class="text-secondary small text-decoration-none hover-primary">
+                 <i class="bi bi-house-door me-1"></i>Return to Main Site
+             </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hover-primary:hover {
+        color: var(--primary-color, #0d6efd) !important;
+    }
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover, 
+    input:-webkit-autofill:focus, 
+    input:-webkit-autofill:active{
+        -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+        -webkit-text-fill-color: #000000 !important;
+        transition: background-color 5000s ease-in-out 0s;
+    }
+    .border-secondary-subtle {
+        border-color: #dee2e6 !important;
+    }
+    /* Enforce focus shadow for cleaner look */
+    .form-control:focus {
+        border-color: #86b7fe;
+        box-shadow: none;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends './analytics_base.html' %}
+
+{% block title %}Dashboard | Rider Reviews{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Rider Reviews Network</h1>
+</div>
+
+<div class="chart-container mt-0">
+    <div class="table-responsive">
+        <table class="table text-light mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Rider (Reviewed)</th>
+                    <th>Student (Author)</th>
+                    <th>Rating</th>
+                    <th>Date</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for review in page_obj %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-white text-nowrap"><i class="bi bi-person-badge me-2 text-info"></i>{{ review.rider.user.username }}</div>
+                    </td>
+                    <td class="text-secondary text-nowrap">@{{ review.reviewer.student.user.username|default:"System" }}</td>
+                    <td class="text-warning text-nowrap">
+                        {% for i in "12345"|make_list|slice:":review.rating" %}★{% endfor %}
+                        <span class="text-muted" style="font-size:0.8rem;">({{ review.rating }})</span>
+                    </td>
+                    <td class="text-secondary text-nowrap">{{ review.created_at|date:"M d, Y" }}</td>
+                    <td class="text-end text-nowrap">
+                        <a href="{% url 'analytics:review_detail' review.id %}" class="btn btn-sm btn-outline-info rounded-pill"><i class="bi bi-file-text-fill me-1"></i>View Record</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-white py-4">No reviews have been submitted yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link bg-dark border-secondary text-primary" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% endif %}
+        
+        <li class="page-item active"><span class="page-link border-primary bg-primary text-white">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link bg-dark border-secondary text-primary" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends './analytics_base.html' %}
+
+{% block title %}Dashboard | Vehicles{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Vehicle Registry</h1>
+</div>
+
+<div class="chart-container mt-0">
+    <div class="table-responsive">
+        <table class="table text-light mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Plate No.</th>
+                    <th>Model</th>
+                    <th>Type</th>
+                    <th>Capacity</th>
+                    <th>Registered Owner</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for vehicle in page_obj %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-white"><i class="bi bi-card-heading me-1 text-secondary"></i>{{ vehicle.vehicle_plate_no }}</div>
+                    </td>
+                    <td class="text-secondary">{{ vehicle.vehicle_model }}</td>
+                    <td class="text-secondary text-capitalize">
+                        <i class="bi {% if vehicle.vehicle_type == 'car' %}bi-car-front{% else %}bi-bicycle{% endif %} me-1"></i>{{ vehicle.get_vehicle_type_display }}
+                    </td>
+                    <td><span class="badge bg-secondary rounded-pill px-3">{{ vehicle.capacity }} Seats</span></td>
+                    <td class="text-secondary">
+                        {% if vehicle.student_owner %}
+                            @{{ vehicle.student_owner.user.username }}
+                        {% else %}
+                            <span class="text-muted fst-italic">Unassigned</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'analytics:vehicle_detail' vehicle.id %}" class="btn btn-sm btn-outline-info rounded-pill"><i class="bi bi-truck-front-fill me-1"></i>View Record</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-white py-4">No vehicle records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link bg-dark border-secondary text-primary" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% endif %}
+        
+        <li class="page-item active"><span class="page-link border-primary bg-primary text-white">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link bg-dark border-secondary text-primary" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

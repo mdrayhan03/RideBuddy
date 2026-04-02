@@ -1,0 +1,229 @@
+{% extends './analytics_base.html' %}
+
+{% block title %}Dashboard | Overview{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Platform Overview</h1>
+    <div class="text-secondary small">
+        <i class="bi bi-clock-history me-1"></i> Data updated just now
+    </div>
+</div>
+
+<!-- 1. Top Row: 5 Stat Cards -->
+<div class="row g-4 mb-4">
+    <div class="col">
+        <div class="stat-card">
+            <span class="stat-card-title"><i class="bi bi-backpack me-2"></i>Students</span>
+            <span class="stat-card-value text-primary">{{ total_students }}</span>
+        </div>
+    </div>
+    <div class="col">
+        <div class="stat-card">
+            <span class="stat-card-title"><i class="bi bi-person-WORKSPACE me-2"></i>Riders</span>
+            <span class="stat-card-value text-info">{{ total_riders }}</span>
+        </div>
+    </div>
+    <div class="col">
+        <div class="stat-card">
+            <span class="stat-card-title"><i class="bi bi-car-front me-2"></i>Complete Rides</span>
+            <span class="stat-card-value text-success">{{ completed_rides }}</span>
+        </div>
+    </div>
+    <div class="col">
+        <div class="stat-card">
+            <span class="stat-card-title"><i class="bi bi-journal-check me-2"></i>Bookings</span>
+            <span class="stat-card-value text-warning">{{ total_bookings }}</span>
+        </div>
+    </div>
+    <div class="col">
+        <div class="stat-card">
+            <span class="stat-card-title"><i class="bi bi-cash-stack me-2"></i>Total Income (10%)</span>
+            <span class="stat-card-value text-success">৳{{ total_income|floatformat:0 }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Main Layout Structure: Left Column (Line Charts) | Right Column (Pie Charts) -->
+<div class="row g-4">
+
+    <!-- LEFT COLUMN: Line Charts -->
+    <div class="col-lg-8 d-flex flex-column gap-4">
+        
+        <!-- Ride Volume Line Chart -->
+        <div class="chart-container mt-0">
+            <h5 class="mb-4 text-white"><i class="bi bi-graph-up-arrow me-2 text-primary"></i>Ride Volume Over Time</h5>
+            <div style="height: 220px;">
+                <canvas id="rideTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bookings Volume Line Chart -->
+        <div class="chart-container mt-0">
+            <h5 class="mb-4 text-white"><i class="bi bi-activity me-2 text-warning"></i>Booking Volume Over Time</h5>
+            <div style="height: 220px;">
+                <canvas id="bookingTrendChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Account Growth Chart -->
+        <div class="chart-container mt-0">
+            <h5 class="mb-4 text-white"><i class="bi bi-people-fill me-2 text-success"></i>Account Growth Over Time</h5>
+            <div style="height: 220px;">
+                <canvas id="accountTrendChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Pie Charts -->
+    <div class="col-lg-4 d-flex flex-column gap-4">
+        
+        <!-- User Distribution Pie Chart -->
+        <div class="chart-container mt-0">
+            <h6 class="mb-3 text-white text-center">User Distribution</h6>
+            <div style="height: 180px;">
+                <canvas id="userDistChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Ride Distribution Pie Chart -->
+        <div class="chart-container mt-0">
+            <h6 class="mb-3 text-white text-center">Ride Outcomes</h6>
+            <div style="height: 180px;">
+                <canvas id="rideDistChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Bookings Distribution Pie Chart -->
+        <div class="chart-container mt-0">
+            <h6 class="mb-3 text-white text-center">Booking Status</h6>
+            <div style="height: 180px;">
+                <canvas id="bookingDistChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Global Defaults for pie charts layout
+    const pieOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'right',
+                labels: { boxWidth: 12, font: {size: 11} }
+            }
+        },
+        borderWidth: 0,
+        cutout: '40%'
+    };
+
+    // 1. User Distribution (Students vs Riders)
+    new Chart(document.getElementById('userDistChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Students', 'Riders'],
+            datasets: [{
+                data: [{{ total_students }}, {{ total_riders }}],
+                backgroundColor: ['#3b82f6', '#10b981']
+            }]
+        },
+        options: pieOptions
+    });
+
+    // 2. Ride Distribution (Completed vs Active vs Cancelled)
+    new Chart(document.getElementById('rideDistChart').getContext('2d'), {
+        type: 'pie', // Standard Pie
+        data: {
+            labels: ['Completed', 'Active/Live', 'Cancelled'],
+            datasets: [{
+                data: [{{ completed_rides }}, {{ active_rides }}, {{ cancelled_rides }}],
+                backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+            }]
+        },
+        options: pieOptions
+    });
+
+    // 3. Bookings Distribution (Pending vs Completed vs Cancelled)
+    new Chart(document.getElementById('bookingDistChart').getContext('2d'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Pending', 'Completed', 'Cancelled'],
+            datasets: [{
+                data: [{{ pending_bookings }}, {{ completed_bookings }}, {{ cancelled_bookings }}],
+                backgroundColor: ['#f59e0b', '#10b981', '#ef4444']
+            }]
+        },
+        options: pieOptions
+    });
+
+    // 4. Ride Trend Line Chart (Real 7-day data)
+    new Chart(document.getElementById('rideTrendChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: {{ date_labels|safe }},
+            datasets: [{
+                label: 'Completed Rides',
+                data: {{ ride_trend|safe }}, 
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // 5. Booking Trend Bar Chart (Real 7-day data)
+    new Chart(document.getElementById('bookingTrendChart').getContext('2d'), {
+        type: 'bar', // Using Bar for contrast
+        data: {
+            labels: {{ date_labels|safe }},
+            datasets: [{
+                label: 'New Bookings',
+                data: {{ booking_trend|safe }}, 
+                backgroundColor: '#f59e0b',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+
+    // 6. Account Growth Line Chart (Real cumulative 7-day data)
+    new Chart(document.getElementById('accountTrendChart').getContext('2d'), {
+        type: 'line',
+        data: {
+            labels: {{ date_labels|safe }},
+            datasets: [{
+                label: 'Total Registered Users',
+                data: {{ user_trend|safe }}, 
+                borderColor: '#10b981', // emerald green
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+</script>
+{% endblock %}

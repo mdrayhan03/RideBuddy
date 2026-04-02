@@ -1,0 +1,66 @@
+{% extends './analytics_base.html' %}
+
+{% block title %}Dashboard | Riders{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">Rider Management</h1>
+    <button class="btn btn-primary"><i class="bi bi-download me-2"></i>Export Data</button>
+</div>
+
+<div class="chart-container mt-0">
+    <div class="table-responsive">
+        <table class="table text-light mb-0 align-middle">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Joined</th>
+                    <th>Status</th>
+                    <th class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rider in page_obj %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-white d-inline-block">{{ rider.get_full_name|default:rider.username }}</div>
+                        {% if rider.is_student %}
+                            <span class="badge bg-warning text-dark ms-2" style="font-size: 0.65rem;">Self-Driving Student</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-secondary">{{ rider.email }}</td>
+                    <td class="text-secondary">{{ rider.date_joined|date:"M d, Y" }}</td>
+                    <td>
+                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3">Active</span>
+                    </td>
+                    <td class="text-end">
+                        <a href="{% url 'analytics:rider_detail' rider.id %}" class="btn btn-sm btn-outline-info rounded-pill"><i class="bi bi-person-fill me-1"></i>View Record</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center text-white py-4">No rider records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% if page_obj.has_other_pages %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item"><a class="page-link bg-dark border-secondary text-primary" href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+        {% endif %}
+        
+        <li class="page-item active"><span class="page-link border-primary bg-primary text-white">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
+        
+        {% if page_obj.has_next %}
+        <li class="page-item"><a class="page-link bg-dark border-secondary text-primary" href="?page={{ page_obj.next_page_number }}">Next</a></li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
