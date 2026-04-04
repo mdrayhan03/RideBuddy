@@ -1,0 +1,94 @@
+{% extends 'analytics/analytics_base.html' %}
+{% block title %}My Profile | Analytics Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="page-title mb-0">My Profile</h1>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show bg-opacity-10 shadow-sm border-0" role="alert" style="background-color: #272c36; color: #f0f2f5;">
+        {{ message }}
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="stat-card text-center h-100 align-items-center justify-content-center py-5">
+            <div class="position-relative mb-4">
+                {% if request.user.profile_picture %}
+                <img src="{{ request.user.profile_picture.url }}" alt="Profile" class="rounded-circle shadow-lg" width="150" height="150" style="object-fit: cover; border: 4px solid var(--border-color);">
+                {% else %}
+                <div class="rounded-circle shadow-lg d-flex align-items-center justify-content-center text-white mx-auto" style="width: 150px; height: 150px; font-size: 4rem; background: linear-gradient(135deg, var(--accent-primary), #6366f1); border: 4px solid var(--border-color);">
+                    {{ request.user.username|make_list|first|upper }}
+                </div>
+                {% endif %}
+            </div>
+            <h3 class="mb-1 text-white">{{ request.user.get_full_name|default:request.user.username }}</h3>
+            <p class="text-secondary mb-3">{{ request.user.email }}</p>
+            <div class="badge bg-primary bg-opacity-25 text-primary rounded-pill px-3 py-2 border border-primary">
+                <i class="bi bi-shield-check me-1"></i> Analytics Access
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8 mb-4">
+        <div class="stat-card h-100">
+            <h5 class="text-white mb-4 border-bottom pb-3" style="border-color: var(--border-color) !important;">
+                <i class="bi bi-person-gear me-2 text-primary"></i> Edit Profile Information
+            </h5>
+            
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="first_name" class="form-label text-secondary small text-uppercase fw-semibold">First Name</label>
+                        <input type="text" class="form-control text-white" style="background-color: var(--bg-dark); border-color: var(--border-color);" id="first_name" name="first_name" value="{{ request.user.first_name }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="last_name" class="form-label text-secondary small text-uppercase fw-semibold">Last Name</label>
+                        <input type="text" class="form-control text-white" style="background-color: var(--bg-dark); border-color: var(--border-color);" id="last_name" name="last_name" value="{{ request.user.last_name }}">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="email" class="form-label text-secondary small text-uppercase fw-semibold">Email Address</label>
+                        <input type="email" class="form-control text-white" style="background-color: var(--bg-dark); border-color: var(--border-color);" id="email" name="email" value="{{ request.user.email }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="phone_no" class="form-label text-secondary small text-uppercase fw-semibold">Phone Number</label>
+                        <input type="text" class="form-control text-white" style="background-color: var(--bg-dark); border-color: var(--border-color);" id="phone_no" name="phone_no" value="{{ request.user.phone_no }}">
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <label for="profile_picture" class="form-label text-secondary small text-uppercase fw-semibold">Profile Picture</label>
+                        <input type="file" class="form-control text-white" style="background-color: var(--bg-dark); border-color: var(--border-color);" id="profile_picture" name="profile_picture" accept="image/*">
+                        <div class="form-text text-secondary mt-2"><i class="bi bi-info-circle me-1"></i> Upload a new image to replace the current one. Maximum size 5MB.</div>
+                    </div>
+
+                    <div class="col-12 mt-4 pt-3 border-top text-end" style="border-color: var(--border-color) !important;">
+                        <button type="submit" class="btn btn-primary px-4 py-2 fw-semibold">
+                            <i class="bi bi-check2-circle me-2"></i>Save Changes
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-control:focus {
+        background-color: #0f1115 !important;
+        border-color: var(--accent-primary) !important;
+        box-shadow: 0 0 0 0.25rem rgba(59, 130, 246, 0.25) !important;
+        color: white !important;
+    }
+    .form-control::placeholder {
+        color: #6c757d !important;
+    }
+</style>
+{% endblock %}

@@ -241,7 +241,16 @@
                     <i class="bi bi-search me-2"></i> Quick search... (Press '/')
                 </div>
                 <div class="topbar-actions d-flex gap-3 align-items-center">
-                    <span class="text-secondary small">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    <a href="{% url 'analytics:profile' %}" class="text-decoration-none d-flex align-items-center gap-2">
+                        {% if request.user.profile_picture %}
+                        <img src="{{ request.user.profile_picture.url }}" alt="Profile" class="rounded-circle" width="32" height="32" style="object-fit: cover; border: 1px solid var(--border-color);">
+                        {% else %}
+                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px; font-size: 0.9rem;">
+                            {{ request.user.username|make_list|first|upper }}
+                        </div>
+                        {% endif %}
+                        <span class="text-secondary small fw-medium">{{ request.user.get_full_name|default:request.user.username }}</span>
+                    </a>
                     {% if user.is_staff %}
                     <a href="{% url 'admin:index' %}" class="btn-outline"><i class="bi bi-shield-lock me-2"></i>Django Admin</a>
                     {% endif %}

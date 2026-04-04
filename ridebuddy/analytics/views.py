@@ -222,3 +222,22 @@ def review_detail_view(request, pk):
     from reviews.models import RiderReview
     review = get_object_or_404(RiderReview.objects.select_related('rider__user', 'reviewer__student__user', 'ride'), pk=pk)
     return render(request, 'analytics/review_detail.html', {'review': review})
+
+@user_passes_test(is_analytics_user, login_url='/analytics/login/')
+def profile_view(request):
+    from django.contrib import messages
+    if request.method == 'POST':
+        user = request.user
+        user.first_name = request.POST.get('first_name', user.first_name)
+        user.last_name = request.POST.get('last_name', user.last_name)
+        user.email = request.POST.get('email', user.email)
+        user.phone_no = request.POST.get('phone_no', user.phone_no)
+        
+        if 'profile_picture' in request.FILES:
+            user.profile_picture = request.FILES['profile_picture']
+            
+        user.save()
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('analytics:profile')
+    
+    return render(request, 'analytics/profile.html')
