@@ -482,12 +482,38 @@ def home_rider(request):
 
     print(f"DEBUG: Displaying as: {display_user.get_full_name()}")
     
-    return render(request, 'home_rider.html', {
+    from reviews.models import StudentReview, PlatformReview
+    pending_review = None
+    review_type = None
+    review_target = ""
+
+    pending_student = StudentReview.objects.filter(reviewer=rider_profile, status='pending').first() if rider_profile else None
+    if pending_student:
+        pending_review = pending_student
+        review_type = 'student'
+        review_target = pending_student.student_booking.student.user.get_full_name() or pending_student.student_booking.student.user.username
+    else:
+        pending_platform = PlatformReview.objects.filter(user=request.user, status='pending').first()
+        if pending_platform:
+            pending_review = pending_platform
+            review_type = 'platform'
+            review_target = "RideBuddy Platform"
+
+    context = {
         'active_ride': active_ride_data,
         'map_data': map_data_json,
         'rider_location': location_data,
         'display_user': display_user
-    })
+    }
+    
+    if pending_review:
+        context['pending_review'] = {
+            'id': pending_review.id,
+            'type': review_type,
+            'target_name': review_target
+        }
+
+    return render(request, 'home_rider.html', context)
 
 @login_required
 def home_student(request):
@@ -496,7 +522,51 @@ def home_student(request):
             return redirect('accounts:home_rider')
         # If neither student nor rider, send to login
         return redirect('accounts:login')
-    return render(request, 'home_student.html')
+        
+    from reviews.models import RiderReview, VehicleReview, PassengerReview, PlatformReview
+    
+    pending_review = None
+    review_type = None
+    review_target = ""
+
+    # Priority 1: Rider Review
+    if hasattr(request.user, 'student_profile'):
+        pending_rider = RiderReview.objects.filter(reviewer__student=request.user.student_profile, status='pending').first()
+        if pending_rider:
+            pending_review = pending_rider
+            review_type = 'rider'
+            review_target = pending_rider.rider.user.get_full_name() or pending_rider.rider.user.username
+        else:
+            # Priority 2: Vehicle Review
+            pending_vehicle = VehicleReview.objects.filter(reviewer__student=request.user.student_profile, status='pending').first()
+            if pending_vehicle:
+                pending_review = pending_vehicle
+                review_type = 'vehicle'
+                review_target = pending_vehicle.vehicle.vehicle_plate_no
+            else:
+                # Priority 3: Passenger Review
+                pending_passenger = PassengerReview.objects.filter(reviewer__student=request.user.student_profile, status='pending').first()
+                if pending_passenger:
+                    pending_review = pending_passenger
+                    review_type = 'passenger'
+                    review_target = pending_passenger.whom_reviewed.student.user.get_full_name() or pending_passenger.whom_reviewed.student.user.username
+                else:
+                    # Priority 4: Platform Review
+                    pending_platform = PlatformReview.objects.filter(user=request.user, status='pending').first()
+                    if pending_platform:
+                        pending_review = pending_platform
+                        review_type = 'platform'
+                        review_target = "RideBuddy Platform"
+
+    context = {}
+    if pending_review:
+        context['pending_review'] = {
+            'id': pending_review.id,
+            'type': review_type,
+            'target_name': review_target
+        }
+
+    return render(request, 'home_student.html', context)
 
 @login_required
 def account_view(request):

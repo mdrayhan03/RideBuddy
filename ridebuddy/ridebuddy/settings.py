@@ -27,9 +27,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-6)jzwv--*n-2a3&-4*&x0id9p4pj#(b5$!8z1(a&^jd--fuwhs'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -51,6 +51,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -83,6 +84,8 @@ WSGI_APPLICATION = 'ridebuddy.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+import dj_database_url
+
 DATABASES = {
     'default': {
         'ENGINE': os.getenv("DB_ENGINE", "django.db.backends.sqlite3"),
@@ -92,6 +95,10 @@ DATABASES = {
         }
     }
 }
+
+db_url = os.environ.get('DATABASE_URL')
+if db_url:
+    DATABASES['default'] = dj_database_url.config(default=db_url, conn_max_age=600)
 
 
 # Password validation

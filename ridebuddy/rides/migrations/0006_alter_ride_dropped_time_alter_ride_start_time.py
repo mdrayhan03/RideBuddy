@@ -10,12 +10,20 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.RemoveField(
+            model_name='ride',
+            name='dropped_time',
+        ),
+        migrations.AddField(
             model_name='ride',
             name='dropped_time',
             field=models.DateTimeField(blank=True, null=True),
         ),
-        migrations.AlterField(
+        migrations.RemoveField(
+            model_name='ride',
+            name='start_time',
+        ),
+        migrations.AddField(
             model_name='ride',
             name='start_time',
             field=models.DateTimeField(blank=True, null=True),

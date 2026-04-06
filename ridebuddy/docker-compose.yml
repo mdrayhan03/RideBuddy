@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: ridebuddy_web
+    command: gunicorn ridebuddy.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=ridebuddy.settings
+      - DATABASE_URL=postgres://ridebuddy_user:ridebuddy_password@db:5432/ridebuddy_db
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  db:
+    image: postgres:15-alpine
+    container_name: ridebuddy_db
+    environment:
+      - POSTGRES_USER=ridebuddy_user
+      - POSTGRES_PASSWORD=ridebuddy_password
+      - POSTGRES_DB=ridebuddy_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ridebuddy_user -d ridebuddy_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+volumes:
+  postgres_data:
+

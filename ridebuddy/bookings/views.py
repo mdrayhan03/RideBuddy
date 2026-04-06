@@ -322,6 +322,10 @@ def cancel_activity_api(request):
                     if not b.dropoff:
                          b.dropoff = {'drop': 'done', 'time': timezone.now().isoformat()}
                     b.save()
+                
+                # Ensure Rider receives their platform/student reviews
+                from reviews.services.review_service import generate_pending_reviews_for_rider
+                generate_pending_reviews_for_rider(ride)
             else:
                 ride.status = new_status
                 ride.save()
