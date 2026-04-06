@@ -29,3 +29,6 @@ RUN python manage.py collectstatic --noinput
 
 # Expose port (optional documentation)
 EXPOSE 8000
+
+# Default command to run the web server
+CMD ["gunicorn", "ridebuddy.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
