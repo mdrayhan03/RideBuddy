@@ -240,6 +240,9 @@ def create_ride(student, booking_id, drive_mode='self', use_own_vehicle=True, ge
     
     # Ensure owner fare is 0
     update_owner_fare(ride)
+    
+    # Calculate total fare based on bookings
+    ride.update_total_fare()
 
     return {
         'success': True,
@@ -298,6 +301,9 @@ def join_ride(student, ride_id, booking_id, use_own_vehicle=False, drive_mode='s
     
     # Ensure owner fare is 0
     update_owner_fare(ride)
+
+    # Calculate total fare based on bookings
+    ride.update_total_fare()
 
     return {
         'success': True, 

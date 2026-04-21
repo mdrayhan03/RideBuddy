@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Make Payment - RideBuddy{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5 pb-5">
+    <div class="d-flex align-items-center mb-4">
+        <button class="btn btn-light rounded-circle me-3 border shadow-sm" onclick="history.back()">
+            <i class="bi bi-arrow-left"></i>
+        </button>
+        <h3 class="fw-bold mb-0">Make Payment</h3>
+    </div>
+
+    <!-- Amount Highlight -->
+    <div class="card bg-primary text-white border-0 rounded-4 mb-4 shadow-sm">
+        <div class="card-body p-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h6 class="mb-1 opacity-75">Paying for Invoice #{{ commission.id }}</h6>
+                <h2 class="fw-bold mb-0">৳{{ commission.commission_amount }}</h2>
+            </div>
+            <i class="bi bi-wallet2 display-4 opacity-50"></i>
+        </div>
+    </div>
+
+    <form method="POST">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+            <label class="form-label fw-bold">Select Payment Method</label>
+            <select name="payment_method" id="paymentMethod" class="form-select form-select-lg rounded-3 shadow-none border" required onchange="updateInstructions()">
+                <option value="" disabled selected>Choose a method...</option>
+                {% for code, name in methods %}
+                <option value="{{ code }}">{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div id="instructionCard" class="card border border-primary rounded-4 mb-4 d-none" style="background-color: #f0f7ff;">
+            <div class="card-body">
+                <h5 class="fw-bold text-primary mb-3" id="instTitle">Payment Instructions</h5>
+                <ul class="mb-0 ps-3" id="instSteps">
+                </ul>
+            </div>
+        </div>
+
+        <div class="mb-4 d-none" id="txSection">
+            <label class="form-label fw-bold">Transaction / Reference ID</label>
+            <input type="text" name="payment_id" class="form-control form-control-lg rounded-3 shadow-none border" required placeholder="Enter the transaction ID here">
+            <small class="text-muted mt-2 d-block">After sending money to the given number/account, paste the TrxID or Reference here to verify your payment.</small>
+        </div>
+
+        <div class="fixed-bottom p-3 bg-white border-top text-center" style="z-index: 1000; box-shadow: 0 -4px 10px rgba(0,0,0,0.05);">
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm" disabled>
+                <i class="bi bi-send me-2"></i>Submit Payment
+            </button>
+        </div>
+    </form>
+</div>
+
+{{ instructions_json|json_script:"instructionData" }}
+
+<script>
+    function updateInstructions() {
+        const method = document.getElementById('paymentMethod').value;
+        const submitBtn = document.getElementById('submitBtn');
+        const instructionCard = document.getElementById('instructionCard');
+        const txSection = document.getElementById('txSection');
+        
+        if (!method) {
+            submitBtn.disabled = true;
+            instructionCard.classList.add('d-none');
+            txSection.classList.add('d-none');
+            return;
+        }
+        
+        const instData = JSON.parse(document.getElementById('instructionData').textContent);
+        const methodInfo = instData[method];
+        
+        if (methodInfo) {
+            instructionCard.classList.remove('d-none');
+            txSection.classList.remove('d-none');
+            submitBtn.disabled = false;
+            
+            document.getElementById('instTitle').innerText = methodInfo.title;
+            
+            const list = document.getElementById('instSteps');
+            list.innerHTML = '';
+            
+            if (methodInfo.account_name) { // Bank format
+                list.innerHTML += `<li class="mb-2">Bank: <strong class="user-select-all">${methodInfo.bank_name} (${methodInfo.branch})</strong></li>`;
+                list.innerHTML += `<li class="mb-2">A/C Name: <strong class="user-select-all">${methodInfo.account_name}</strong></li>`;
+                list.innerHTML += `<li class="mb-2">A/C Number: <strong class="user-select-all text-primary">${methodInfo.account_no}</strong></li>`;
+                list.innerHTML += `<li class="mb-2">Send exactly <strong>৳{{ commission.commission_amount }}</strong> to this account.</li>`;
+            } else { // Mobile Banking format
+                list.innerHTML += `<li class="mb-2">Number: <strong class="user-select-all fs-5 text-primary" style="letter-spacing: 1px;">${methodInfo.number}</strong></li>`;
+                list.innerHTML += `<li class="mb-2">${methodInfo.steps}</li>`;
+                list.innerHTML += `<li class="mb-2">Send exactly <strong>৳{{ commission.commission_amount }}</strong>.</li>`;
+            }
+        }
+    }
+</script>
+{% endblock %}

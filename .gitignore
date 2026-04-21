@@ -67,7 +67,7 @@ db.sqlite3-journal
 # Media / static / uploaded files
 media/
 staticfiles/
-documents/
+# documents/
 temp/
 gitignore/
 

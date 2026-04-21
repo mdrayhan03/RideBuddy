@@ -233,7 +233,7 @@
                     </div>
                     {% endwith %}
                 </div>
-                {% elif user.is_rider and user.rider_profile.employer_student %}
+                {% elif user.is_rider and user.rider_profile.employer_student and not user.is_student %}
                 <div class="account-section mb-4">
                     <div class="section-title"><i class="bi bi-person-workspace"></i>My Employer</div>
                     <div class="d-flex align-items-center gap-3">
@@ -257,6 +257,20 @@
 
                 <!-- Quick Actions -->
                 <div class="account-section p-0 overflow-hidden mb-4">
+                    {% if user.is_student %}
+                    <div class="settings-item d-flex align-items-center" onclick="window.location.href='{% url 'accounts:payments' %}'">
+                        <div class="settings-icon me-3 d-flex align-items-center justify-content-center"
+                            style="width: 40px; height: 40px; border-radius: 12px; background: rgba(52, 168, 83, 0.1); color: #34a853;">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <p class="mb-0 fw-bold">Payment</p>
+                            <small class="text-muted">Manage your payments</small>
+                        </div>
+                        <i class="bi bi-chevron-right text-muted"></i>
+                    </div>
+                    {% endif %}
+                    {% if user.is_student %}
                     <div class="settings-item d-flex align-items-center" onclick="showWalletPage()">
                         <div class="settings-icon me-3 d-flex align-items-center justify-content-center"
                             style="width: 40px; height: 40px; border-radius: 12px; background: rgba(52, 168, 83, 0.1); color: #34a853;">
@@ -264,10 +278,11 @@
                         </div>
                         <div class="flex-grow-1">
                             <p class="mb-0 fw-bold">Wallet</p>
-                            <small class="text-muted">Balance: ৳450</small>
+                            <small class="text-muted">Feature in development</small>
                         </div>
                         <i class="bi bi-chevron-right text-muted"></i>
                     </div>
+                    {% endif %}
                     <div class="settings-item d-flex align-items-center" onclick="showSettingsPage()">
                         <div class="settings-icon me-3 d-flex align-items-center justify-content-center"
                             style="width: 40px; height: 40px; border-radius: 12px; background: rgba(26, 115, 232, 0.1); color: #1a73e8;">

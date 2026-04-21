@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Invoice #{{ commission.id }} - RideBuddy{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5 pb-5">
+    <div class="d-flex align-items-center mb-4">
+        <button class="btn btn-light rounded-circle me-3 border shadow-sm" onclick="history.back()">
+            <i class="bi bi-arrow-left"></i>
+        </button>
+        <h3 class="fw-bold mb-0">Invoice #{{ commission.id }}</h3>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4 text-center mb-4 position-relative overflow-hidden" style="background-color: #fafafa; border: 1px dashed #ccc !important;">
+        <i class="bi bi-receipt text-muted" style="font-size: 3rem; opacity: 0.1; position: absolute; right: 20px; bottom: -10px;"></i>
+        <h4 class="text-muted mb-2">Total Due</h4>
+        <h1 class="display-4 fw-bold text-dark mb-1">৳{{ commission.commission_amount }}</h1>
+        <p class="text-muted mb-4">Billing Period: <br><strong>{{ commission.from_date|date:"d M Y" }} to {{ commission.to_date|date:"d M Y" }}</strong></p>
+        
+        <hr style="border-style: dashed;">
+        
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Total Ride Fare</span>
+            <span class="fw-bold">৳{{ commission.total_ride_fare }}</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Commission Rate</span>
+            <span class="fw-bold">10%</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+            <span class="text-muted">Total Rides</span>
+            <span class="fw-bold">{{ commission.rides.count }}</span>
+        </div>
+        
+        <hr style="border-style: dashed;">
+        
+        <div class="d-flex justify-content-between align-items-center">
+            <span class="fw-bold fs-5">Status</span>
+            {% if commission.payment_status == 'due' %}
+                <span class="badge bg-danger rounded-pill px-3 py-2 fs-6">DUE</span>
+            {% elif commission.payment_status == 'paid' and not commission.is_verified %}
+                <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">PROCESSING</span>
+            {% else %}
+                <span class="badge bg-success rounded-pill px-3 py-2 fs-6">PAID</span>
+            {% endif %}
+        </div>
+        
+        {% if commission.payment_method %}
+        <div class="d-flex justify-content-between mt-3 text-start bg-light p-3 rounded-3">
+            <div>
+                <small class="text-muted d-block">Payment Method</small>
+                <strong>{{ commission.get_payment_method_display }}</strong>
+            </div>
+            <div class="text-end">
+                <small class="text-muted d-block">Transaction ID</small>
+                <strong>{{ commission.payment_id }}</strong>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if commission.payment_status == 'due' %}
+    <div class="fixed-bottom p-3 bg-white border-top text-center" style="z-index: 1000; box-shadow: 0 -4px 10px rgba(0,0,0,0.05);">
+        <button class="btn btn-primary btn-lg w-100 rounded-pill fw-bold shadow-sm" onclick="window.location.href='{% url 'accounts:make_payment' commission.id %}'">
+            <i class="bi bi-credit-card me-2"></i>Pay Now
+        </button>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payments - RideBuddy{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="d-flex align-items-center mb-4">
+        <button class="btn btn-light rounded-circle me-3 border shadow-sm" onclick="history.back()">
+            <i class="bi bi-arrow-left"></i>
+        </button>
+        <h3 class="fw-bold mb-0">Payments</h3>
+    </div>
+
+    <!-- Due Payments -->
+    <h5 class="fw-bold mb-3 text-danger"><i class="bi bi-exclamation-circle me-2"></i>Due Payments</h5>
+    {% if due_payments %}
+        {% for payment in due_payments %}
+        <div class="card border-0 shadow-sm rounded-4 mb-3" onclick="window.location.href='{% url 'accounts:invoice' payment.id %}'" style="cursor: pointer;">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold fs-5">৳{{ payment.commission_amount }}</div>
+                        <small class="text-muted">{{ payment.from_date|date:"d M y" }} - {{ payment.to_date|date:"d M Y" }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-danger rounded-pill px-3 py-2">DUE</span>
+                        <div class="mt-1"><i class="bi bi-chevron-right text-muted"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-light text-center rounded-4 border">
+            <i class="bi bi-check-circle text-success fs-3 d-block mb-2"></i>
+            You have no due payments!
+        </div>
+    {% endif %}
+
+    <!-- History -->
+    <h5 class="fw-bold mb-3 mt-5"><i class="bi bi-clock-history me-2"></i>Payment History</h5>
+    {% if history_payments %}
+        {% for payment in history_payments %}
+        <div class="card border-0 shadow-sm rounded-4 mb-3" onclick="window.location.href='{% url 'accounts:invoice' payment.id %}'" style="cursor: pointer;">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="fw-bold fs-5">৳{{ payment.commission_amount }}</div>
+                        <small class="text-muted">{{ payment.from_date|date:"d M y" }} - {{ payment.to_date|date:"d M Y" }}</small>
+                    </div>
+                    <div class="text-end">
+                        {% if payment.is_verified %}
+                            <span class="badge bg-success rounded-pill px-3 py-2">VERIFIED</span>
+                        {% else %}
+                            <span class="badge bg-primary rounded-pill px-3 py-2">PROCESSING</span>
+                        {% endif %}
+                        <div class="mt-1"><i class="bi bi-chevron-right text-muted"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-light text-center rounded-4 border">
+            <i class="bi bi-journal-x text-muted fs-3 d-block mb-2"></i>
+            No past payments found.
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

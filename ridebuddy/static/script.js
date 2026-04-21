@@ -1025,7 +1025,8 @@ function finishRide() {
 
 // Shared Functions
 function showWalletPage() {
-    navigateTo('wallet');
+    showToast('Wallet feature coming soon!', 'info');
+    // navigateTo('wallet');
 }
 
 function showSettingsPage() {

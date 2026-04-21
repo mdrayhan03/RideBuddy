@@ -762,3 +762,60 @@ def change_password_api(request):
             
     except Exception as e:
         return JsonResponse({'message': str(e)}, status=500)
+
+from rides.models import OwnerCommission
+from django.utils import timezone
+
+@login_required
+def payments_view(request):
+    if not request.user.is_student:
+        return redirect('accounts:account')
+        
+    student_profile = request.user.student_profile
+    due_payments = OwnerCommission.objects.filter(owner=student_profile, payment_status='due').order_by('-invoice_date')
+    history_payments = OwnerCommission.objects.filter(owner=student_profile).exclude(payment_status='due').order_by('-invoice_date')
+    
+    return render(request, 'payment.html', {
+        'due_payments': due_payments,
+        'history_payments': history_payments,
+    })
+
+@login_required
+def invoice_view(request, commission_id):
+    try:
+        commission = OwnerCommission.objects.get(id=commission_id, owner=request.user.student_profile)
+    except OwnerCommission.DoesNotExist:
+        return redirect('accounts:payments')
+        
+    return render(request, 'invoice.html', {'commission': commission})
+
+@login_required
+def make_payment_view(request, commission_id):
+    try:
+        commission = OwnerCommission.objects.get(id=commission_id, owner=request.user.student_profile)
+    except OwnerCommission.DoesNotExist:
+        return redirect('accounts:payments')
+        
+    if commission.payment_status == 'paid':
+        return redirect('accounts:invoice', commission_id=commission.id)
+        
+    if request.method == 'POST':
+        payment_method = request.POST.get('payment_method')
+        payment_id = request.POST.get('payment_id')
+        if payment_method and payment_id:
+            commission.payment_method = payment_method
+            commission.payment_id = payment_id
+            commission.payment_status = 'paid'
+            commission.payment_date = timezone.now().date()
+            commission.save()
+            return redirect('accounts:invoice', commission_id=commission.id)
+            
+    methods = OwnerCommission.PAYMENT_METHOD_CHOICES
+    instructions = OwnerCommission.PAYMENT_INSTRUCTION_DICT
+    
+    return render(request, 'make_payment.html', {
+        'commission': commission,
+        'methods': methods,
+        'instructions': instructions,
+        'instructions_json': json.dumps(instructions)
+    })
