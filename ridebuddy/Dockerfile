@@ -24,11 +24,24 @@ RUN pip install --upgrade pip \
 # Copy project files into the container
 COPY . /app/
 
+# --- ADDED STEPS ---
+# Create an entrypoint script to handle migrations at runtime
+RUN echo '#!/bin/sh \n\
+python manage.py migrate --noinput \n\
+exec "$@"' > /app/entrypoint.sh
+
+# Make the script executable
+RUN chmod +x /app/entrypoint.sh
+# -------------------
+
 # Collect static files during build
 RUN python manage.py collectstatic --noinput
 
-# Expose port (optional documentation)
+# Expose port
 EXPOSE 8000
 
+# Set the entrypoint to run migrations, then execute CMD
+ENTRYPOINT ["/app/entrypoint.sh"]
+
 # Default command to run the web server
-CMD ["gunicorn", "ridebuddy.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+CMD ["gunicorn", "ridebuddy.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1"]
