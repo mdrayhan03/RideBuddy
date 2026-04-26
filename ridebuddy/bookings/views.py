@@ -94,6 +94,8 @@ def create_booking_api(request):
                 scheduled_start = timezone.datetime.fromisoformat(scheduled_start.replace('Z', '+00:00'))
             except (ValueError, TypeError):
                 scheduled_start = None
+        else:
+            scheduled_start = None
 
         booking = Booking.objects.create(
             student=student,

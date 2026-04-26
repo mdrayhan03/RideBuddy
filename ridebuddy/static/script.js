@@ -762,6 +762,14 @@ async function goToRidePage() {
         return;
     }
 
+    if (appState.isScheduled) {
+        const schedTime = document.getElementById('scheduledStartTime').value;
+        if (!schedTime) {
+            showToast('Please select a scheduled time', 'warning');
+            return;
+        }
+    }
+
     const pLat = localStorage.getItem('pickupLat');
     const pLng = localStorage.getItem('pickupLng');
     const dLat = localStorage.getItem('dropLat');

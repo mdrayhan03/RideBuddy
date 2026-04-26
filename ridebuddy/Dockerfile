@@ -31,4 +31,5 @@ RUN python manage.py collectstatic --noinput
 EXPOSE 8000
 
 # Default command to run the web server
-CMD ["gunicorn", "ridebuddy.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+# Use 1 worker to save RAM, but 4 threads to handle multiple users simultaneously
+CMD ["gunicorn", "ridebuddy.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--threads", "2", "--worker-class", "gthread"]

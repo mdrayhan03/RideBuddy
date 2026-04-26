@@ -254,9 +254,13 @@
         document.getElementById('backToActivitiesBtn').classList.add('d-none');
         
         // Reset all detail views
-        document.getElementById('searchingState').classList.add('d-none');
-        document.getElementById('matchingState').classList.add('d-none');
-        document.getElementById('activeRideState').classList.add('d-none');
+        const searching = document.getElementById('searchingState');
+        const matching = document.getElementById('matchingState');
+        const active = document.getElementById('activeRideState');
+        
+        if (searching) searching.classList.add('d-none');
+        if (matching) matching.classList.add('d-none');
+        if (active) active.classList.add('d-none');
     }
 
     function refreshDetailView(act) {
@@ -264,8 +268,10 @@
         const matching = document.getElementById('matchingState');   // Passenger searching
         const active = document.getElementById('activeRideState');   // Riding/Active
 
-        // Hide all first
-        [searching, matching, active].forEach(el => el.classList.add('d-none'));
+        // Hide all first safely
+        [searching, matching, active].forEach(el => {
+            if (el) el.classList.add('d-none');
+        });
 
         if (act.type === 'hosting') {
             searching.classList.remove('d-none');

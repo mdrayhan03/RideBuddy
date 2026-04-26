@@ -1,0 +1,60 @@
+Algorithm 1: Ride Matching Algorithm
+Input: 
+    TargetBooking B_t (The incoming ride request)
+    ActiveRides R_active (List of currently active rides)
+    SimilarityThreshold θ (e.g., 0.8)
+    MaxResults N (Number of top matches to return)
+Output: 
+    Top N Matched Rides sorted by route similarity
+
+1.  v_t ← EXTRACT_ROUTE_VECTOR(B_t)
+2.  if IS_ZERO_VECTOR(v_t) then
+3.      return []
+4.  end if
+5.
+6.  MatchedRides ← []
+7.
+8.  for each Ride r in R_active do
+9.      // Filter 1: Check Vehicle Type Compatibility
+10.     if r.VehicleType ≠ B_t.RideType then
+11.         continue
+12.     end if
+13.
+14.     // Filter 2: Check Time Window Compatibility
+15.     TimeDiff ← ABS(r.ScheduledStart - B_t.ScheduledStart)
+16.     MaxAllowedDiff ← (r.WaitingThreshold + B_t.WaitingThreshold) / 2
+17.     if TimeDiff > MaxAllowedDiff then
+18.         continue
+19.     end if
+20.
+21.     // Filter 3: Check Passenger Preferences (Gender, AC, etc.)
+22.     if not CHECK_PREFERENCES_COMPATIBILITY(r.Bookings, B_t.Preferences) then
+23.         continue
+24.     end if
+25.
+26.     // Determine Reference Route for the existing ride
+27.     B_ref ← GET_REFERENCE_BOOKING(r.Bookings) // Selected by max waypoints & distance
+28.     v_ref ← EXTRACT_ROUTE_VECTOR(B_ref)
+29.
+30.     // Calculate Route Similarity
+31.     SimScore ← COSINE_SIMILARITY(v_t, v_ref)
+32.
+33.     // Filter 4: Strict Geofence for Vehicle Providers (Carpool Hosts)
+34.     if B_t.IsVehicleProvider == TRUE then
+35.         DistStart ← HAVERSINE_DISTANCE(B_t.StartLocation, B_ref.StartLocation)
+36.         DistEnd ← HAVERSINE_DISTANCE(B_t.EndLocation, B_ref.EndLocation)
+37.         
+38.         if DistStart > 500 meters OR DistEnd > 500 meters then
+39.             continue
+40.         end if
+41.     end if
+42.
+43.     // Add to matches if it meets the similarity threshold
+44.     if SimScore ≥ θ then
+45.         MatchedRides.APPEND({Ride: r, Score: SimScore})
+46.     end if
+47. end for
+48.
+49. // Sort and Return Top N Results
+50. SORT MatchedRides by Score in DESCENDING order
+51. return MatchedRides[1 to N]
