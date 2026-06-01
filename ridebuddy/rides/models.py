@@ -105,7 +105,7 @@ class OwnerCommission(models.Model):
     verified_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Payment {self.id} by {self.rider.user.username}"
+        return f"Payment {self.id} by {self.owner.user.username}"
 
     @property
     def get_instructions(self):
